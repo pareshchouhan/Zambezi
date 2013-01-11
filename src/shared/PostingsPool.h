@@ -72,6 +72,28 @@ void destroyPostingsPool(PostingsPool* pool) {
   free(pool);
 }
 
+int isTermFrequencyPresent(PostingsPool* pool) {
+  int reqspace = pool->pool[0][0];
+  int csize = pool->pool[0][4];
+  if(csize + 5 == reqspace) {
+    return 0;
+  }
+  return 1;
+}
+
+int isPositional(PostingsPool* pool) {
+  int reqspace = pool->pool[0][0];
+  int csize = pool->pool[0][4];
+  if(csize + 5 == reqspace) {
+    return 0;
+  }
+  int tfcsize = pool->pool[0][csize + 5];
+  if(csize + tfcsize + 6 == reqspace) {
+    return 0;
+  }
+  return 1;
+}
+
 long compressAndAddNonPositional(PostingsPool* pool, unsigned int* data,
                                  unsigned int len, long tailPointer) {
   int lastSegment = -1;
