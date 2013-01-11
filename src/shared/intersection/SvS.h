@@ -8,6 +8,90 @@
 
 #define TERMINAL_DOCID -1
 
+// Gallop to >= docid
+inline int gallopSearch(PostingsPool* pool, int* data, int* count,
+                        int* index, long* pointer, int docid) {
+  while(1) {
+    if(*index == *count) {
+      (*pointer) = nextPointer(pool, *pointer);
+      if(*pointer == UNDEFINED_POINTER) {
+        return 0;
+      }
+      memset(data, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
+      (*count) = decompressDocidBlock(pool, data, *pointer);
+      (*index) = 0;
+    }
+    if(data[*count - 1] == docid) {
+      (*index) = *count - 1;
+      return 1;
+    } else if(data[*count - 1] < docid) {
+      (*index) = *count;
+      continue;
+    }
+
+    if(data[*index] >= docid) {
+      return 1;
+    }
+
+    int beginIndex = *index;
+    int hop = 0;
+    int tempIndex = beginIndex;
+    while(tempIndex < *count) {
+      if(data[tempIndex] < docid) {
+        beginIndex = tempIndex;
+        hop = hop == 0 ? 1 : hop * 2;
+        tempIndex += hop;
+      } else {
+        break;
+      }
+    }
+    if(data[beginIndex] == docid) {
+      (*index) = beginIndex;
+      return 1;
+    }
+
+    int endIndex = *count - 1;
+    hop = 0;
+    tempIndex = endIndex;
+    while(tempIndex >= 0) {
+      if(data[tempIndex] > docid) {
+        endIndex = tempIndex;
+        hop = hop == 0 ? 1 : hop * 2;
+        tempIndex -= hop;
+      } else {
+        break;
+      }
+    }
+    if(data[endIndex] == docid) {
+      (*index) = endIndex;
+      return 1;
+    }
+
+    // Binary search between begin and end indexes
+    int mid = beginIndex;
+    while(beginIndex < endIndex) {
+      mid = beginIndex + ((endIndex - beginIndex) / 2);
+
+      if(docid < data[mid]) {
+        endIndex = mid - 1;
+      } else if(docid > data[mid]) {
+        beginIndex = mid + 1;
+      } else {
+        (*index) = mid;
+        return 1;
+      }
+    }
+    (*index) = endIndex;
+    if(*index < 0) {
+      (*index) = 0;
+    } else if(*index >= *count) {
+      (*index) = *count;
+      continue;
+    }
+    return 1;
+  }
+}
+
 int* intersectPostingsLists_SvS(PostingsPool* pool, long a, long b, int minDf) {
   int* set = (int*) calloc(minDf, sizeof(int));
   unsigned int* dataA = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
@@ -22,64 +106,35 @@ int* intersectPostingsLists_SvS(PostingsPool* pool, long a, long b, int minDf) {
       set[iSet++] = dataA[iA];
       iA++;
       iB++;
-    }
-
-    if(iA == cA) {
-      a = nextPointer(pool, a);
-      if(a == UNDEFINED_POINTER) {
-        break;
+      if(iA == cA) {
+        a = nextPointer(pool, a);
+        if(a == UNDEFINED_POINTER) {
+          break;
+        }
+        memset(dataA, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
+        cA = decompressDocidBlock(pool, dataA, a);
+        iA = 0;
       }
-      memset(dataA, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
-      cA = decompressDocidBlock(pool, dataA, a);
-      iA = 0;
-    }
-    if(iB == cB) {
-      b = nextPointer(pool, b);
-      if(b == UNDEFINED_POINTER) {
-        break;
+      if(iB == cB) {
+        b = nextPointer(pool, b);
+        if(b == UNDEFINED_POINTER) {
+          break;
+        }
+        memset(dataB, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
+        cB = decompressDocidBlock(pool, dataB, b);
+        iB = 0;
       }
-      memset(dataB, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
-      cB = decompressDocidBlock(pool, dataB, b);
-      iB = 0;
     }
 
     if(dataA[iA] < dataB[iB]) {
-      if(dataA[cA - 1] < dataB[iB]) {
-        iA = cA - 1;
+      iA++;
+      if(!gallopSearch(pool, dataA, &cA, &iA, &a, dataB[iB])) {
+        break;
       }
-      while(dataA[iA] < dataB[iB]) {
-        iA++;
-        if(iA == cA) {
-          a = nextPointer(pool, a);
-          if(a == UNDEFINED_POINTER) {
-            break;
-          }
-          memset(dataA, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
-          cA = decompressDocidBlock(pool, dataA, a);
-          iA = 0;
-        }
-        if(dataA[cA - 1] < dataB[iB]) {
-          iA = cA - 1;
-        }
-      }
-    } else {
-      if(dataB[cB - 1] < dataA[iA]) {
-        iB = cB - 1;
-      }
-      while(dataB[iB] < dataA[iA]) {
-        iB++;
-        if(iB == cB) {
-          b = nextPointer(pool, b);
-          if(b == UNDEFINED_POINTER) {
-            break;
-          }
-          memset(dataB, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
-          cB = decompressDocidBlock(pool, dataB, b);
-          iB = 0;
-        }
-        if(dataB[cB - 1] < dataA[iA]) {
-          iB = cB - 1;
-        }
+    } else if(dataB[iB] < dataA[iA]) {
+      iB++;
+      if(!gallopSearch(pool, dataB, &cB, &iB, &b, dataA[iA])) {
+        break;
       }
     }
   }
@@ -107,42 +162,28 @@ int intersectSetPostingsList_SvS(PostingsPool* pool, long a, int* currentSet, in
       currentSet[iSet++] = currentSet[iCurrent];
       iCurrent++;
       i++;
-    }
 
-    if(i == c) {
-      a = nextPointer(pool, a);
-      if(a == UNDEFINED_POINTER) {
+      if(i == c) {
+        a = nextPointer(pool, a);
+        if(a == UNDEFINED_POINTER) {
+          break;
+        }
+        memset(data, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
+        c = decompressDocidBlock(pool, data, a);
+        i = 0;
+      }
+      if(iCurrent == len) {
         break;
       }
-      memset(data, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
-      c = decompressDocidBlock(pool, data, a);
-      i = 0;
-    }
-    if(iCurrent == len) {
-      break;
-    }
-    if(currentSet[iCurrent] == TERMINAL_DOCID) {
-      break;
+      if(currentSet[iCurrent] == TERMINAL_DOCID) {
+        break;
+      }
     }
 
     if(data[i] < currentSet[iCurrent]) {
-      if(data[c - 1] < currentSet[iCurrent]) {
-        i = c - 1;
-      }
-      while(data[i] < currentSet[iCurrent]) {
-        i++;
-        if(i == c) {
-          a = nextPointer(pool, a);
-          if(a == UNDEFINED_POINTER) {
-            break;
-          }
-          memset(data, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
-          c = decompressDocidBlock(pool, data, a);
-          i = 0;
-        }
-        if(data[c - 1] < currentSet[iCurrent]) {
-          i = c - 1;
-        }
+      i++;
+      if(!gallopSearch(pool, data, &c, &i, &a, currentSet[iCurrent])) {
+        break;
       }
     } else {
       while(currentSet[iCurrent] < data[i]) {
