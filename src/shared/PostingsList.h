@@ -28,20 +28,25 @@ PostingsList* getPostingsList(InvertedIndex* index, int termid) {
   list->df = getDf(index->pointers, termid);
   list->pointer = getStartPointer(index->pointers, termid);
   list->docid = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
-  list->tf = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
+  list->tf = NULL;
+  if(isTermFrequencyPresent(index->pool)) {
+    list->tf = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
+  }
   list->position = -1;
   list->length = 0;
 
   if(list->pointer != UNDEFINED_POINTER) {
     list->length = decompressDocidBlock(index->pool, list->docid, list->pointer);
-    decompressTfBlock(index->pool, list->tf, list->pointer);
+    if(list->tf) {
+      decompressTfBlock(index->pool, list->tf, list->pointer);
+    }
   }
   return list;
 }
 
 void destroyPostingsList(PostingsList* list) {
   free(list->docid);
-  free(list->tf);
+  if(list->tf) free(list->tf);
   free(list);
 }
 
@@ -55,7 +60,9 @@ void nextPosting(PostingsList* list) {
       return;
     }
     list->length = decompressDocidBlock(list->index->pool, list->docid, list->pointer);
-    decompressTfBlock(list->index->pool, list->tf, list->pointer);
+    if(list->tf) {
+      decompressTfBlock(list->index->pool, list->tf, list->pointer);
+    }
     list->position = -1;
   }
   list->position++;
@@ -72,6 +79,9 @@ int getDocumentId(PostingsList* list) {
 }
 
 int getTermFrequency(PostingsList* list) {
+  if(!list->tf) {
+    return -1;
+  }
   return list->tf[list->position];
 }
 
