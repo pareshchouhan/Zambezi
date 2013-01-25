@@ -40,7 +40,8 @@ int main (int argc, char** args) {
   strcat(indexPath, INDEX_FILE);
   fp = fopen(indexPath, "rb");
 
-  PostingsPool* contiguousPool = createPostingsPool(NUMBER_OF_POOLS);
+  int reverse = readReverseFlag(fp);
+  PostingsPool* contiguousPool = createPostingsPool(NUMBER_OF_POOLS, reverse);
   Pointers* contiguousPointers = createPointers(DEFAULT_VOCAB_SIZE);
 
   int term = -1;

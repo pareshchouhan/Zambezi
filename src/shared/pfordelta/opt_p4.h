@@ -50,8 +50,16 @@ unsigned int OPT4(unsigned int *doc_id, unsigned int list_size, unsigned int *au
   int i;
 
   if(delta) {
-    for(i = list_size - 1; i > 0; i--) {
-      doc_id[i] -= doc_id[i - 1];
+    if(list_size > 1) {
+      if(doc_id[0] < doc_id[1]) {
+        for(i = list_size - 1; i > 0; i--) {
+          doc_id[i] -= doc_id[i - 1];
+        }
+      } else {
+        for(i = 0; i < list_size - 1; i++) {
+          doc_id[i] -= doc_id[i + 1];
+        }
+      }
     }
   }
 
