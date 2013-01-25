@@ -21,7 +21,8 @@ To run the indexer:
 	-mb <maximum-buffer-length-in-number-of-blocks> -input <input-paths>
 
 Note that `-input` must be the last argument, and that `<input-paths>` is a list of files.
-`-reverse` indicates that postings will be stored in reverse order, so that the last posting inserted into the index will be read first.
+
+`-reverse` indicates that postings will be stored in reverse order, such that the last posting inserted into the index will be read first.
 
 You can create a contiguous index as follows:
 
