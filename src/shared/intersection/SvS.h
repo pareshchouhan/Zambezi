@@ -211,7 +211,7 @@ int intersectSetPostingsList_SvS(PostingsPool* pool, long a, int* currentSet, in
   return iSet;
 }
 
-int* intersectSvS(PostingsPool* pool, long* startPointers, int len, int minDf) {
+int* intersectSvS(PostingsPool* pool, long* startPointers, int len, int minDf, int hits) {
   if(len < 2) {
     unsigned int* block = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
     int* set = (int*) calloc(minDf, sizeof(int));
@@ -220,8 +220,9 @@ int* intersectSvS(PostingsPool* pool, long* startPointers, int len, int minDf) {
     while(t != UNDEFINED_POINTER) {
       memset(block, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
       int c = decompressDocidBlock(pool, block, t);
-      memcpy(&set[iSet], block, c * sizeof(int));
-      iSet += c;
+      int r = iSet + c <= hits ? c : hits - iSet;
+      memcpy(&set[iSet], block, r * sizeof(int));
+      iSet += r;
       t = nextPointer(pool, t);
     }
     free(block);

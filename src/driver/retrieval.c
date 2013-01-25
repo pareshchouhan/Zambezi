@@ -33,7 +33,9 @@ int main (int argc, char** args) {
   char* outputPath = getValueCL(argc, args, "-output");
   // Hits
   int hits = 1000;
+  int hitsSpecified = 0;
   if(isPresentCL(argc, args, "-hits")) {
+    hitsSpecified = 1;
     hits = atoi(getValueCL(argc, args, "-hits"));
   }
   // Algorithm
@@ -138,8 +140,10 @@ int main (int argc, char** args) {
     // Compute intersection set (or in disjunctive mode, top-k)
     int* set;
     if(algorithm == SVS) {
-      hits = minimumDf;
-      set = intersectSvS(index->pool, qStartPointers, qlen, minimumDf);
+      if(!hitsSpecified) {
+        hits = minimumDf;
+      }
+      set = intersectSvS(index->pool, qStartPointers, qlen, minimumDf, hits);
     } else if(algorithm == WAND) {
       float* UB = (float*) malloc(qlen * sizeof(float));
       for(i = 0; i < qlen; i++) {
