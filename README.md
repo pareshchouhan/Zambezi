@@ -37,3 +37,5 @@ To do retrieval:
 	[-hits <hits>] [-output <output-path>]
 
 If `-output` is included, the output is stored at `<output-path>`.
+
+Default value for `-hits` is 1000. If `-hits` is not provided for SvS, the entire intersection set is computed.
