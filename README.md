@@ -18,6 +18,7 @@ Please note that you must perform necessary preprocessing (e.g., parsing, stoppi
 To run the indexer:
 
 	out/driver/indexer -index <output-index-root-path> [-positional | -tf] [-reverse]
+	[-bloom -r <bits-per-element> -k <number-of-hash-functions>]
 	-mb <maximum-buffer-length-in-number-of-blocks> -input <input-paths>
 
 Note that `-input` must be the last argument, and that `<input-paths>` is a list of files.
@@ -33,9 +34,9 @@ Retrieval
 
 To do retrieval:
 
-	out/driver/retrieval -index <index-root-path> -query <query-path> -algorithm <SvS|WAND>
+	out/driver/retrieval -index <index-root-path> -query <query-path> -algorithm <SvS|WAND|BWAND_OR|BWAND_AND>
 	[-hits <hits>] [-output <output-path>]
 
 If `-output` is included, the output is stored at `<output-path>`.
 
-Default value for `-hits` is 1000. If `-hits` is not provided for SvS, the entire intersection set is computed.
+Default value for `-hits` is 1000. If `-hits` is not provided for SvS or BWAND_AND, the entire intersection set is computed.
