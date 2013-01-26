@@ -14,16 +14,21 @@ int* bwandAnd(PostingsPool* pool, long* startPointers,
   unsigned int* blockDocid = (unsigned int*) calloc(2 * BLOCK_SIZE, sizeof(unsigned int));
   unsigned int count;
   int posting;
-  int i, j, iSet = 0;
+  int i, j, iSet = 0, left = 1;
 
   count = decompressDocidBlock(pool, blockDocid, startPointers[0]);
   posting = 0;
 
-  while(1) {
+  while(left) {
     int pivot = blockDocid[posting++];
 
     int found = 1;
     for(i = 1; i < len; i++) {
+      if(startPointers[i] == UNDEFINED_POINTER) {
+        left = 0;
+        found = 0;
+        break;
+      }
       if(!containsDocid(pool, pivot, &startPointers[i])) {
         found = 0;
         break;
@@ -35,7 +40,7 @@ int* bwandAnd(PostingsPool* pool, long* startPointers,
       if(iSet >= hits) break;
     }
 
-    if(posting == count) {
+    if(posting == count && left) {
       startPointers[0] = nextPointer(pool, startPointers[0]);
       if(startPointers[0] == UNDEFINED_POINTER) {
         break;
