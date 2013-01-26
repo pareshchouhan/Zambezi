@@ -71,6 +71,7 @@ PostingsPool* readPostingsPool(FILE* fp) {
 
 int readReverseFlag(FILE* fp) {
   int r;
+  fseek(fp, 0, SEEK_SET);
   fread(&r, sizeof(unsigned int), 1, fp); //segment
   fread(&r, sizeof(unsigned int), 1, fp); //offset
   fread(&r, sizeof(unsigned int), 1, fp); //reverse
@@ -596,6 +597,7 @@ long readPostingsForTerm(PostingsPool* pool, long pointer, FILE* fp) {
 void readBloomStats(FILE* fp, int* bloomEnabled,
                     unsigned int* nbHash, unsigned int* bitsPerElement) {
   unsigned int temp;
+  fseek(fp, 0, SEEK_SET);
   fread(&temp, sizeof(unsigned int), 1, fp); //segment
   fread(&temp, sizeof(unsigned int), 1, fp); //offset
   fread(&temp, sizeof(unsigned int), 1, fp); //reverse
