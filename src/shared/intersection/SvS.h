@@ -8,11 +8,6 @@
 
 #define TERMINAL_DOCID -1
 
-#define LESS_THAN(X,Y,R) (R == 0 ? (X < Y) : (X > Y))
-#define LESS_THAN_EQUAL(X,Y,R) (R == 0 ? (X <= Y) : (X >= Y))
-#define GREATER_THAN(X,Y,R) (R == 0 ? (X > Y) : (X < Y))
-#define GREATER_THAN_EQUAL(X,Y,R) (R == 0 ? (X >= Y) : (X <= Y))
-
 // Gallop to >= docid
 inline int gallopSearch(PostingsPool* pool, int* data, int* count,
                         int* index, long* pointer, int docid) {

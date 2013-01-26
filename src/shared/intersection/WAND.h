@@ -11,11 +11,6 @@
 #define MIN(X, Y) (X < Y ? X : Y)
 #define TERMINAL_DOCID -1
 
-#define LESS_THAN(X,Y,R) (R == 0 ? (X < Y) : (X > Y))
-#define LESS_THAN_EQUAL(X,Y,R) (R == 0 ? (X <= Y) : (X >= Y))
-#define GREATER_THAN(X,Y,R) (R == 0 ? (X > Y) : (X < Y))
-#define GREATER_THAN_EQUAL(X,Y,R) (R == 0 ? (X >= Y) : (X <= Y))
-
 int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
          int* docLen, int totalDocs, float avgDocLen, int hits) {
   Heap* elements = initHeap(hits);

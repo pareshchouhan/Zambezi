@@ -1,5 +1,5 @@
-#ifndef BWAND_H_GUARD
-#define BWAND_H_GUARD
+#ifndef BWAND_OR_H_GUARD
+#define BWAND_OR_H_GUARD
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,8 +9,7 @@
 
 #define TERMINAL_DOCID -1
 
-// Note: change start pointers to tail pointers
-int* bwand(PostingsPool* pool, long* startPointers,
+int* bwandOr(PostingsPool* pool, long* startPointers,
            float* UB, int len, int hits) {
   Heap* elements = initHeap(hits);
   unsigned int* blockDocid = (unsigned int*) calloc(2 * BLOCK_SIZE, sizeof(unsigned int));

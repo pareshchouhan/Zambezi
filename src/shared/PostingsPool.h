@@ -10,6 +10,10 @@
 #define MAX_INT_VALUE ((unsigned int) 0xFFFFFFFF)
 #define UNDEFINED_POINTER -1l
 #define UNKNOWN_SEGMENT -1
+#define LESS_THAN(X,Y,R) (R == 0 ? (X < Y) : (X > Y))
+#define LESS_THAN_EQUAL(X,Y,R) (R == 0 ? (X <= Y) : (X >= Y))
+#define GREATER_THAN(X,Y,R) (R == 0 ? (X > Y) : (X < Y))
+#define GREATER_THAN_EQUAL(X,Y,R) (R == 0 ? (X >= Y) : (X <= Y))
 
 #define DECODE_SEGMENT(P) ((int) (P >> 32))
 #define DECODE_OFFSET(P) ((unsigned int) (P & 0xFFFFFFFF))
@@ -143,7 +147,7 @@ long compressAndAddNonPositional(PostingsPool* pool, unsigned int* data,
     }
   }
 
-  unsigned int maxDocId = data[len - 1];
+  unsigned int maxDocId = pool->reverse ? data[0] : data[len - 1];
   unsigned int* block = (unsigned int*) calloc(BLOCK_SIZE*2, sizeof(unsigned int));
   if(pool->reverse) {
     int i, t, m = len/2;
@@ -218,7 +222,7 @@ long compressAndAddTfOnly(PostingsPool* pool, unsigned int* data,
     }
   }
 
-  unsigned int maxDocId = data[len - 1];
+  unsigned int maxDocId = pool->reverse ? data[0] : data[len - 1];
 
   if(pool->reverse) {
     int i, t, m = len/2;
@@ -307,7 +311,7 @@ long compressAndAddPositional(PostingsPool* pool, unsigned int* data,
     }
   }
 
-  unsigned int maxDocId = data[len - 1];
+  unsigned int maxDocId = pool->reverse ? data[0] : data[len - 1];
 
   if(pool->reverse) {
     int i, t, m = len/2;
@@ -518,7 +522,7 @@ int containsDocid(PostingsPool* pool, unsigned int docid, long* pointer) {
   int pSegment = DECODE_SEGMENT(*pointer);
   unsigned int pOffset = DECODE_OFFSET(*pointer);
 
-  while(pool->pool[pSegment][pOffset + 3] < docid) {
+  while(LESS_THAN(pool->pool[pSegment][pOffset + 3], docid, pool->reverse)) {
     int nSegment = pool->pool[pSegment][pOffset + 1];
     int nOffset = pool->pool[pSegment][pOffset + 2];
     pSegment = nSegment;

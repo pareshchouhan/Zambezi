@@ -14,7 +14,8 @@
 #include "InvertedIndex.h"
 #include "intersection/SvS.h"
 #include "intersection/WAND.h"
-#include "intersection/BWAND.h"
+#include "intersection/BWAND_AND.h"
+#include "intersection/BWAND_OR.h"
 
 #ifndef RETRIEVAL_ALGO_ENUM_GUARD
 #define RETRIEVAL_ALGO_ENUM_GUARD
@@ -22,7 +23,8 @@ typedef enum Algorithm Algorithm;
 enum Algorithm {
   SVS = 0,
   WAND = 1,
-  BWAND = 2
+  BWAND_OR = 2,
+  BWAND_AND = 3
 };
 #endif
 
@@ -51,10 +53,12 @@ int main (int argc, char** args) {
     algorithm = SVS;
   } else if(!strcmp(intersectionAlgorithm, "WAND")) {
     algorithm = WAND;
-  } else if(!strcmp(intersectionAlgorithm, "BWAND")) {
-    algorithm = BWAND;
+  } else if(!strcmp(intersectionAlgorithm, "BWAND_OR")) {
+    algorithm = BWAND_OR;
+  } else if(!strcmp(intersectionAlgorithm, "BWAND_AND")) {
+    algorithm = BWAND_AND;
   } else {
-    printf("Invalid algorithm (Options: SvS | WAND | BWAND)\n");
+    printf("Invalid algorithm (Options: SvS | WAND | BWAND_OR | BWAND_AND)\n");
     return;
   }
 
@@ -164,18 +168,23 @@ int main (int argc, char** args) {
                  index->pointers->totalDocLen / (float) index->pointers->totalDocs,
                  hits);
       free(UB);
-    } else if(algorithm == BWAND) {
+    } else if(algorithm == BWAND_OR) {
       float* UB = (float*) malloc(qlen * sizeof(float));
       for(i = 0; i < qlen; i++) {
         UB[i] = idf(index->pointers->totalDocs, qdf[i]);
       }
-      set = bwand(index->pool, qStartPointers, UB, qlen, hits);
+      set = bwandOr(index->pool, qStartPointers, UB, qlen, hits);
       free(UB);
+    } else if(algorithm == BWAND_AND) {
+      if(!hitsSpecified) {
+        hits = minimumDf;
+      }
+      set = bwandAnd(index->pool, qStartPointers, qlen, hits);
     }
 
     // If output is specified, write the retrieved set to output
     if(outputPath) {
-      for(i = 0; i < hits && set[i] != TERMINAL_DOCID; i++) {
+      for(i = 0; i < hits && set[i] > 0; i++) {
         fprintf(fp, "q: %d no: %u\n", id, set[i]);
       }
     }
