@@ -392,6 +392,7 @@ int main (int argc, char** args) {
   if(bloomEnabled) {
     nbHash = atoi(getValueCL(argc, args, "-k"));
     bitsPerElement = atoi(getValueCL(argc, args, "-r"));
+  }
 
   int reverse = 0;
   if(isPresentCL(argc, args, "-reverse")) {
