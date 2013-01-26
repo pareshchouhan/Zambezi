@@ -21,6 +21,7 @@ struct PostingsPool {
   unsigned int numberOfPools;
   unsigned int segment;
   unsigned int offset;
+  unsigned int reverse;
   int** pool;
 
   // if Bloom filters enabled
@@ -32,6 +33,7 @@ struct PostingsPool {
 void writePostingsPool(PostingsPool* pool, FILE* fp) {
   fwrite(&pool->segment, sizeof(unsigned int), 1, fp);
   fwrite(&pool->offset, sizeof(unsigned int), 1, fp);
+  fwrite(&pool->reverse, sizeof(unsigned int), 1, fp);
   fwrite(&pool->bloomEnabled, sizeof(int), 1, fp);
   fwrite(&pool->nbHash, sizeof(unsigned int), 1, fp);
   fwrite(&pool->bitsPerElement, sizeof(unsigned int), 1, fp);
@@ -47,6 +49,7 @@ PostingsPool* readPostingsPool(FILE* fp) {
   PostingsPool* pool = (PostingsPool*) malloc(sizeof(PostingsPool));
   fread(&pool->segment, sizeof(unsigned int), 1, fp);
   fread(&pool->offset, sizeof(unsigned int), 1, fp);
+  fread(&pool->reverse, sizeof(unsigned int), 1, fp);
   fread(&pool->bloomEnabled, sizeof(int), 1, fp);
   fread(&pool->nbHash, sizeof(unsigned int), 1, fp);
   fread(&pool->bitsPerElement, sizeof(unsigned int), 1, fp);
@@ -62,7 +65,15 @@ PostingsPool* readPostingsPool(FILE* fp) {
   return pool;
 }
 
-PostingsPool* createPostingsPool(int numberOfPools, int bloomEnabled,
+int readReverseFlag(FILE* fp) {
+  int r;
+  fread(&r, sizeof(unsigned int), 1, fp); //segment
+  fread(&r, sizeof(unsigned int), 1, fp); //offset
+  fread(&r, sizeof(unsigned int), 1, fp); //reverse
+  return r;
+}
+
+PostingsPool* createPostingsPool(int numberOfPools, int reverse, int bloomEnabled,
                                  int nbHash, int bitsPerElement) {
   PostingsPool* pool = (PostingsPool*) malloc(sizeof(PostingsPool));
   pool->pool = (int**) malloc(numberOfPools * sizeof(int*));
@@ -76,6 +87,7 @@ PostingsPool* createPostingsPool(int numberOfPools, int bloomEnabled,
   pool->bloomEnabled = bloomEnabled;
   pool->nbHash = nbHash;
   pool->bitsPerElement = bitsPerElement;
+  pool->reverse = reverse;
   return pool;
 }
 
@@ -133,6 +145,14 @@ long compressAndAddNonPositional(PostingsPool* pool, unsigned int* data,
 
   unsigned int maxDocId = data[len - 1];
   unsigned int* block = (unsigned int*) calloc(BLOCK_SIZE*2, sizeof(unsigned int));
+  if(pool->reverse) {
+    int i, t, m = len/2;
+    for(i = 0; i < m; i++) {
+      t = data[i];
+      data[i] = data[len - i - 1];
+      data[len - i - 1] = t;
+    }
+  }
   unsigned int csize = OPT4(data, len, block, 1);
 
   int reqspace = csize + filterSize + 8;
@@ -160,8 +180,13 @@ long compressAndAddNonPositional(PostingsPool* pool, unsigned int* data,
   }
 
   if(lastSegment >= 0) {
-    pool->pool[lastSegment][lastOffset + 1] = pool->segment;
-    pool->pool[lastSegment][lastOffset + 2] = pool->offset;
+    if(!pool->reverse) {
+      pool->pool[lastSegment][lastOffset + 1] = pool->segment;
+      pool->pool[lastSegment][lastOffset + 2] = pool->offset;
+    } else {
+      pool->pool[pool->segment][pool->offset + 1] = lastSegment;
+      pool->pool[pool->segment][pool->offset + 2] = lastOffset;
+    }
   }
 
   long newPointer = ENCODE_POINTER(pool->segment, pool->offset);
@@ -173,7 +198,7 @@ long compressAndAddNonPositional(PostingsPool* pool, unsigned int* data,
 }
 
 long compressAndAddTfOnly(PostingsPool* pool, unsigned int* data,
-    unsigned int* tf, unsigned int len, long tailPointer) {
+                          unsigned int* tf, unsigned int len, long tailPointer) {
   int lastSegment = -1;
   unsigned int lastOffset = 0;
   if(tailPointer != UNDEFINED_POINTER) {
@@ -194,6 +219,20 @@ long compressAndAddTfOnly(PostingsPool* pool, unsigned int* data,
   }
 
   unsigned int maxDocId = data[len - 1];
+
+  if(pool->reverse) {
+    int i, t, m = len/2;
+    for(i = 0; i < m; i++) {
+      t = data[i];
+      data[i] = data[len - i - 1];
+      data[len - i - 1] = t;
+
+      t = tf[i];
+      tf[i] = tf[len - i - 1];
+      tf[len - i - 1] = t;
+    }
+  }
+
   unsigned int* block = (unsigned int*) calloc(BLOCK_SIZE*2, sizeof(unsigned int));
   unsigned int* tfblock = (unsigned int*) calloc(BLOCK_SIZE*2, sizeof(unsigned int));
   unsigned int csize = OPT4(data, len, block, 1);
@@ -227,8 +266,13 @@ long compressAndAddTfOnly(PostingsPool* pool, unsigned int* data,
   }
 
   if(lastSegment >= 0) {
-    pool->pool[lastSegment][lastOffset + 1] = pool->segment;
-    pool->pool[lastSegment][lastOffset + 2] = pool->offset;
+    if(!pool->reverse) {
+      pool->pool[lastSegment][lastOffset + 1] = pool->segment;
+      pool->pool[lastSegment][lastOffset + 2] = pool->offset;
+    } else {
+      pool->pool[pool->segment][pool->offset + 1] = lastSegment;
+      pool->pool[pool->segment][pool->offset + 2] = lastOffset;
+    }
   }
 
   long newPointer = ENCODE_POINTER(pool->segment, pool->offset);
@@ -264,6 +308,31 @@ long compressAndAddPositional(PostingsPool* pool, unsigned int* data,
   }
 
   unsigned int maxDocId = data[len - 1];
+
+  if(pool->reverse) {
+    int i, t, m = len/2;
+
+    unsigned int* rpositions = (unsigned int*) calloc(plen, sizeof(unsigned int*));
+    int curPos = plen, rpos = 0;
+    for(i = len - 1; i >= 0; i--) {
+      for(t = curPos - tf[i]; t < curPos; t++) {
+        rpositions[rpos++] = positions[t];
+      }
+      curPos -= tf[i];
+    }
+    positions = rpositions;
+
+    for(i = 0; i < m; i++) {
+      t = data[i];
+      data[i] = data[len - i - 1];
+      data[len - i - 1] = t;
+
+      t = tf[i];
+      tf[i] = tf[len - i - 1];
+      tf[len - i - 1] = t;
+    }
+  }
+
   int pblocksize = 3 * ((plen / BLOCK_SIZE) + 1) * BLOCK_SIZE;
   unsigned int* block = (unsigned int*) calloc(BLOCK_SIZE*2, sizeof(unsigned int));
   unsigned int* tfblock = (unsigned int*) calloc(BLOCK_SIZE*2, sizeof(unsigned int));
@@ -327,13 +396,21 @@ long compressAndAddPositional(PostingsPool* pool, unsigned int* data,
   }
 
   if(lastSegment >= 0) {
-    pool->pool[lastSegment][lastOffset + 1] = pool->segment;
-    pool->pool[lastSegment][lastOffset + 2] = pool->offset;
+    if(!pool->reverse) {
+      pool->pool[lastSegment][lastOffset + 1] = pool->segment;
+      pool->pool[lastSegment][lastOffset + 2] = pool->offset;
+    } else {
+      pool->pool[pool->segment][pool->offset + 1] = lastSegment;
+      pool->pool[pool->segment][pool->offset + 2] = lastOffset;
+    }
   }
 
   long newPointer = ENCODE_POINTER(pool->segment, pool->offset);
   pool->offset += reqspace;
 
+  if(pool->reverse) {
+    free(positions);
+  }
   free(block);
   free(tfblock);
   free(pblock);
@@ -375,7 +452,7 @@ int decompressDocidBlock(PostingsPool* pool, unsigned int* outBlock, long pointe
 
   unsigned int aux[BLOCK_SIZE*4];
   unsigned int* block = &pool->pool[pSegment][pOffset + 7];
-  detailed_p4_decode(outBlock, block, aux, 1);
+  detailed_p4_decode(outBlock, block, aux, 1, pool->reverse);
 
   return pool->pool[pSegment][pOffset + 5];
 }
@@ -387,7 +464,7 @@ int decompressTfBlock(PostingsPool* pool, unsigned int* outBlock, long pointer) 
   unsigned int aux[BLOCK_SIZE*4];
   unsigned int csize = pool->pool[pSegment][pOffset + 6];
   unsigned int* block = &pool->pool[pSegment][pOffset + csize + 8];
-  detailed_p4_decode(outBlock, block, aux, 0);
+  detailed_p4_decode(outBlock, block, aux, 0, pool->reverse);
 
   return pool->pool[pSegment][pOffset + 5];
 }
@@ -427,7 +504,7 @@ int decompressPositionBlock(PostingsPool* pool, unsigned int* outBlock, long poi
   for(i = 0; i < nb; i++) {
     unsigned int sb = pool->pool[pSegment][index];
     unsigned int* block = &pool->pool[pSegment][index + 1];
-    detailed_p4_decode(&outBlock[i * BLOCK_SIZE], block, aux, 0);
+    detailed_p4_decode(&outBlock[i * BLOCK_SIZE], block, aux, 0, pool->reverse);
     memset(aux, 0, BLOCK_SIZE * 4 * sizeof(unsigned int));
     index += sb + 1;
   }
@@ -476,7 +553,7 @@ long readPostingsForTerm(PostingsPool* pool, long pointer, FILE* fp) {
   unsigned int pOffset = DECODE_OFFSET(pointer);
 
   while(pSegment != UNKNOWN_SEGMENT) {
-    long pos = ((pSegment * (unsigned long) MAX_INT_VALUE) + pOffset) * 4 + 20;
+    long pos = ((pSegment * (unsigned long) MAX_INT_VALUE) + pOffset) * 4 + 24;
 
     fseek(fp, pos, SEEK_SET);
     int reqspace = 0;
@@ -515,8 +592,9 @@ long readPostingsForTerm(PostingsPool* pool, long pointer, FILE* fp) {
 void readBloomStats(FILE* fp, int* bloomEnabled,
                     unsigned int* nbHash, unsigned int* bitsPerElement) {
   unsigned int temp;
-  fread(&temp, sizeof(unsigned int), 1, fp);
-  fread(&temp, sizeof(unsigned int), 1, fp);
+  fread(&temp, sizeof(unsigned int), 1, fp); //segment
+  fread(&temp, sizeof(unsigned int), 1, fp); //offset
+  fread(&temp, sizeof(unsigned int), 1, fp); //reverse
   fread(bloomEnabled, sizeof(int), 1, fp);
   fread(nbHash, sizeof(unsigned int), 1, fp);
   fread(bitsPerElement, sizeof(unsigned int), 1, fp);

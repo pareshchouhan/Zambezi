@@ -31,10 +31,11 @@ struct InvertedIndex {
   Pointers* pointers;
 };
 
-InvertedIndex* createInvertedIndex(int bloomEnabled, unsigned int nbHash,
+InvertedIndex* createInvertedIndex(int reverse, int bloomEnabled,
+                                   unsigned int nbHash,
                                    unsigned int bitsPerElement) {
   InvertedIndex* index = (InvertedIndex*) malloc(sizeof(InvertedIndex));
-  index->pool = createPostingsPool(NUMBER_OF_POOLS, bloomEnabled,
+  index->pool = createPostingsPool(NUMBER_OF_POOLS, reverse, bloomEnabled,
                                    nbHash, bitsPerElement);
   index->dictionary = initDictionary();
   index->pointers = createPointers(DEFAULT_VOCAB_SIZE);

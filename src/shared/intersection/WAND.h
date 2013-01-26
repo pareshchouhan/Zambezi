@@ -11,6 +11,11 @@
 #define MIN(X, Y) (X < Y ? X : Y)
 #define TERMINAL_DOCID -1
 
+#define LESS_THAN(X,Y,R) (R == 0 ? (X < Y) : (X > Y))
+#define LESS_THAN_EQUAL(X,Y,R) (R == 0 ? (X <= Y) : (X >= Y))
+#define GREATER_THAN(X,Y,R) (R == 0 ? (X > Y) : (X < Y))
+#define GREATER_THAN_EQUAL(X,Y,R) (R == 0 ? (X >= Y) : (X <= Y))
+
 int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
          int* docLen, int totalDocs, float avgDocLen, int hits) {
   Heap* elements = initHeap(hits);
@@ -37,8 +42,9 @@ int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
 
   for(i = 0; i < len; i++) {
     for(j = i + 1; j < len; j++) {
-      if(blockDocid[mapping[i]][posting[mapping[i]]] >
-         blockDocid[mapping[j]][posting[mapping[j]]]) {
+      if(GREATER_THAN(blockDocid[mapping[i]][posting[mapping[i]]],
+                      blockDocid[mapping[j]][posting[mapping[j]]],
+                      pool->reverse)) {
         int temp = mapping[i];
         mapping[i] = mapping[j];
         mapping[j] = temp;
@@ -105,7 +111,7 @@ int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
           continue;
         }
 
-        while(blockDocid[aterm][posting[aterm]] <= pivot) {
+        while(LESS_THAN_EQUAL(blockDocid[aterm][posting[aterm]], pivot, pool->reverse)) {
           posting[aterm]++;
           if(posting[aterm] > counts[aterm] - 1) {
             startPointers[aterm] = nextPointer(pool, startPointers[aterm]);
@@ -124,7 +130,7 @@ int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
       int atermIdx;
       for(atermIdx = 0; atermIdx < MIN(pTermIdx + 1, len); atermIdx++) {
         if(df[mapping[atermIdx]] <= df[aterm] &&
-           blockDocid[mapping[atermIdx]][posting[mapping[atermIdx]]] < pivot) {
+           LESS_THAN(blockDocid[mapping[atermIdx]][posting[mapping[atermIdx]]], pivot, pool->reverse)) {
           int atermTemp = mapping[atermIdx];
 
           if(posting[atermTemp] >= counts[atermTemp] - 1 &&
@@ -143,7 +149,7 @@ int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
         }
       }
 
-      while(blockDocid[aterm][posting[aterm]] < pivot) {
+      while(LESS_THAN(blockDocid[aterm][posting[aterm]], pivot, pool->reverse)) {
         posting[aterm]++;
         if(posting[aterm] > counts[aterm] - 1) {
           startPointers[aterm] = nextPointer(pool, startPointers[aterm]);
@@ -160,8 +166,9 @@ int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
 
     for(i = 0; i < len; i++) {
       for(j = i + 1; j < len; j++) {
-        if(blockDocid[mapping[i]][posting[mapping[i]]] >
-           blockDocid[mapping[j]][posting[mapping[j]]]) {
+        if(GREATER_THAN(blockDocid[mapping[i]][posting[mapping[i]]],
+                        blockDocid[mapping[j]][posting[mapping[j]]],
+                        pool->reverse)) {
           int temp = mapping[i];
           mapping[i] = mapping[j];
           mapping[j] = temp;

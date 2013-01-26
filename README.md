@@ -17,10 +17,12 @@ Please note that you must perform necessary preprocessing (e.g., parsing, stoppi
 
 To run the indexer:
 
-	out/driver/indexer -index <output-index-root-path> [-positional | -tf]
+	out/driver/indexer -index <output-index-root-path> [-positional | -tf] [-reverse]
 	-mb <maximum-buffer-length-in-number-of-blocks> -input <input-paths>
 
 Note that `-input` must be the last argument, and that `<input-paths>` is a list of files.
+
+`-reverse` indicates that postings will be stored in reverse order, such that the last posting inserted into the index will be read first.
 
 You can create a contiguous index as follows:
 
@@ -35,3 +37,5 @@ To do retrieval:
 	[-hits <hits>] [-output <output-path>]
 
 If `-output` is included, the output is stored at `<output-path>`.
+
+Default value for `-hits` is 1000. If `-hits` is not provided for SvS, the entire intersection set is computed.

@@ -43,7 +43,8 @@ int main (int argc, char** args) {
   int bloomEnabled;
   unsigned int nbHash, bitsPerElement;
   readBloomStats(fp, &bloomEnabled, &nbHash, &bitsPerElement);
-  PostingsPool* contiguousPool = createPostingsPool(NUMBER_OF_POOLS, bloomEnabled,
+  int reverse = readReverseFlag(fp);
+  PostingsPool* contiguousPool = createPostingsPool(NUMBER_OF_POOLS, reverse, bloomEnabled,
                                                     nbHash, bitsPerElement);
   Pointers* contiguousPointers = createPointers(DEFAULT_VOCAB_SIZE);
 

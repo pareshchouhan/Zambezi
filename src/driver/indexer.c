@@ -271,7 +271,7 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
       if(nb == 1) {
         if(data->positional == TFONLY) {
           pointer = compressAndAddTfOnly(index->pool, curBuffer, data->buffer->tf[id],
-                                             BLOCK_SIZE, pointer);
+                                         BLOCK_SIZE, pointer);
         } else if(data->positional == POSITIONAL) {
           pointer = compressAndAddPositional(index->pool, curBuffer, data->buffer->tf[id],
                                              // The first index (0) holds the number
@@ -284,7 +284,7 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
                                                 BLOCK_SIZE, pointer);
         }
         // If no start pointer exists
-        if(getStartPointer(index->pointers, id) == UNDEFINED_POINTER) {
+        if(index->pool->reverse || getStartPointer(index->pointers, id) == UNDEFINED_POINTER) {
           setStartPointer(index->pointers, id, pointer);
         }
       } else {
@@ -292,8 +292,8 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
         for(j = 0; j < nb; j++) {
           if(data->positional == TFONLY) {
             pointer = compressAndAddTfOnly(index->pool, &curBuffer[j * BLOCK_SIZE],
-                                               &data->buffer->tf[id][j * BLOCK_SIZE],
-                                               BLOCK_SIZE, pointer);
+                                           &data->buffer->tf[id][j * BLOCK_SIZE],
+                                           BLOCK_SIZE, pointer);
           } else if(data->positional == POSITIONAL) {
             // The number of positions in the current block is stored at index "ps"
             pointer = compressAndAddPositional(index->pool, &curBuffer[j * BLOCK_SIZE],
@@ -306,7 +306,7 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
             pointer = compressAndAddNonPositional(index->pool, &curBuffer[j * BLOCK_SIZE],
                                                   BLOCK_SIZE, pointer);
           }
-          if(getStartPointer(index->pointers, id) == UNDEFINED_POINTER) {
+          if(index->pool->reverse || getStartPointer(index->pointers, id) == UNDEFINED_POINTER) {
             setStartPointer(index->pointers, id, pointer);
           }
         }
@@ -392,12 +392,18 @@ int main (int argc, char** args) {
   if(bloomEnabled) {
     nbHash = atoi(getValueCL(argc, args, "-k"));
     bitsPerElement = atoi(getValueCL(argc, args, "-r"));
+
+  int reverse = 0;
+  if(isPresentCL(argc, args, "-reverse")) {
+    reverse = 1;
   }
+
   // List of input files (must be the last argument)
   int inputBeginIndex = isPresentCL(argc, args, "-input") + 1;
 
   // Creating and initializing the inverted index and its auxiliary data structures
-  InvertedIndex* index = createInvertedIndex(bloomEnabled, nbHash, bitsPerElement);
+  InvertedIndex* index = createInvertedIndex(reverse, bloomEnabled, nbHash, bitsPerElement);
+
   IndexingData* data = (IndexingData*) malloc(sizeof(IndexingData));
   data->buffer = createDynamicBuffer(DEFAULT_VOCAB_SIZE, positional);
   if(positional == POSITIONAL) {
@@ -526,7 +532,7 @@ int main (int argc, char** args) {
             compressAndAddNonPositional(index->pool, &curBuffer[j * BLOCK_SIZE],
                                         BLOCK_SIZE, pointer);
         }
-        if(getStartPointer(index->pointers, term) == UNDEFINED_POINTER) {
+        if(index->pool->reverse || getStartPointer(index->pointers, term) == UNDEFINED_POINTER) {
           setStartPointer(index->pointers, term, pointer);
         }
       }
@@ -549,7 +555,7 @@ int main (int argc, char** args) {
             compressAndAddNonPositional(index->pool, &curBuffer[nb * BLOCK_SIZE],
                                         res, pointer);
         }
-        if(getStartPointer(index->pointers, term) == UNDEFINED_POINTER) {
+        if(index->pool->reverse || getStartPointer(index->pointers, term) == UNDEFINED_POINTER) {
           setStartPointer(index->pointers, term, pointer);
         }
       }

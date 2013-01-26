@@ -8,6 +8,11 @@
 
 #define TERMINAL_DOCID -1
 
+#define LESS_THAN(X,Y,R) (R == 0 ? (X < Y) : (X > Y))
+#define LESS_THAN_EQUAL(X,Y,R) (R == 0 ? (X <= Y) : (X >= Y))
+#define GREATER_THAN(X,Y,R) (R == 0 ? (X > Y) : (X < Y))
+#define GREATER_THAN_EQUAL(X,Y,R) (R == 0 ? (X >= Y) : (X <= Y))
+
 // Gallop to >= docid
 inline int gallopSearch(PostingsPool* pool, int* data, int* count,
                         int* index, long* pointer, int docid) {
@@ -24,12 +29,12 @@ inline int gallopSearch(PostingsPool* pool, int* data, int* count,
     if(data[*count - 1] == docid) {
       (*index) = *count - 1;
       return 1;
-    } else if(data[*count - 1] < docid) {
+    } else if(LESS_THAN(data[*count - 1], docid, pool->reverse)) {
       (*index) = *count;
       continue;
     }
 
-    if(data[*index] >= docid) {
+    if(GREATER_THAN_EQUAL(data[*index], docid, pool->reverse)) {
       return 1;
     }
 
@@ -37,7 +42,7 @@ inline int gallopSearch(PostingsPool* pool, int* data, int* count,
     int hop = 0;
     int tempIndex = beginIndex;
     while(tempIndex < *count) {
-      if(data[tempIndex] < docid) {
+      if(LESS_THAN(data[tempIndex], docid, pool->reverse)) {
         beginIndex = tempIndex;
         hop = hop == 0 ? 1 : hop * 2;
         tempIndex += hop;
@@ -54,7 +59,7 @@ inline int gallopSearch(PostingsPool* pool, int* data, int* count,
     hop = 0;
     tempIndex = endIndex;
     while(tempIndex >= 0) {
-      if(data[tempIndex] > docid) {
+      if(GREATER_THAN(data[tempIndex], docid, pool->reverse)) {
         endIndex = tempIndex;
         hop = hop == 0 ? 1 : hop * 2;
         tempIndex -= hop;
@@ -72,9 +77,9 @@ inline int gallopSearch(PostingsPool* pool, int* data, int* count,
     while(beginIndex < endIndex) {
       mid = beginIndex + ((endIndex - beginIndex) / 2);
 
-      if(docid < data[mid]) {
+      if(LESS_THAN(docid, data[mid], pool->reverse)) {
         endIndex = mid - 1;
-      } else if(docid > data[mid]) {
+      } else if(GREATER_THAN(docid, data[mid], pool->reverse)) {
         beginIndex = mid + 1;
       } else {
         (*index) = mid;
@@ -126,12 +131,12 @@ int* intersectPostingsLists_SvS(PostingsPool* pool, long a, long b, int minDf) {
       }
     }
 
-    if(dataA[iA] < dataB[iB]) {
+    if(LESS_THAN(dataA[iA], dataB[iB], pool->reverse)) {
       iA++;
       if(!gallopSearch(pool, dataA, &cA, &iA, &a, dataB[iB])) {
         break;
       }
-    } else if(dataB[iB] < dataA[iA]) {
+    } else if(LESS_THAN(dataB[iB], dataA[iA], pool->reverse)) {
       iB++;
       if(!gallopSearch(pool, dataB, &cB, &iB, &b, dataA[iA])) {
         break;
@@ -180,13 +185,13 @@ int intersectSetPostingsList_SvS(PostingsPool* pool, long a, int* currentSet, in
       }
     }
 
-    if(data[i] < currentSet[iCurrent]) {
+    if(LESS_THAN(data[i], currentSet[iCurrent], pool->reverse)) {
       i++;
       if(!gallopSearch(pool, data, &c, &i, &a, currentSet[iCurrent])) {
         break;
       }
     } else {
-      while(currentSet[iCurrent] < data[i]) {
+      while(LESS_THAN(currentSet[iCurrent], data[i], pool->reverse)) {
         iCurrent++;
         if(iCurrent == len) {
           break;
@@ -206,7 +211,7 @@ int intersectSetPostingsList_SvS(PostingsPool* pool, long a, int* currentSet, in
   return iSet;
 }
 
-int* intersectSvS(PostingsPool* pool, long* startPointers, int len, int minDf) {
+int* intersectSvS(PostingsPool* pool, long* startPointers, int len, int minDf, int hits) {
   if(len < 2) {
     unsigned int* block = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
     int* set = (int*) calloc(minDf, sizeof(int));
@@ -215,8 +220,9 @@ int* intersectSvS(PostingsPool* pool, long* startPointers, int len, int minDf) {
     while(t != UNDEFINED_POINTER) {
       memset(block, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
       int c = decompressDocidBlock(pool, block, t);
-      memcpy(&set[iSet], block, c * sizeof(int));
-      iSet += c;
+      int r = iSet + c <= hits ? c : hits - iSet;
+      memcpy(&set[iSet], block, r * sizeof(int));
+      iSet += r;
       t = nextPointer(pool, t);
     }
     free(block);
