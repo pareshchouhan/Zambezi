@@ -227,6 +227,9 @@ int* intersectSvS(PostingsPool* pool, long* startPointers, int len, int minDf, i
   int* set = intersectPostingsLists_SvS(pool, startPointers[0], startPointers[1], minDf);
   int i;
   for(i = 2; i < len; i++) {
+    if(set[0] == TERMINAL_DOCID) {
+      break;
+    }
     intersectSetPostingsList_SvS(pool, startPointers[i], set, minDf);
   }
   return set;
