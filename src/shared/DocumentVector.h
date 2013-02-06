@@ -109,9 +109,9 @@ void addDocumentVector(DocumentVector* vectors, unsigned int* document,
     expandDocumentVector(vectors);
   }
 
-  unsigned int* block = (unsigned int*) calloc(length*2, sizeof(unsigned int));
   int nb = length / BLOCK_SIZE;
   int res = length % BLOCK_SIZE;
+  unsigned int* block = (unsigned int*) calloc((nb + 1) * BLOCK_SIZE * 2, sizeof(unsigned int));
   int csize = 1, i = 0;
 
   for(i = 0; i < nb; i++) {

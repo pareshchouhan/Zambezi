@@ -24,7 +24,7 @@ void destroyFixedBuffer(FixedBuffer* buffer) {
 }
 
 void resetFixedBuffer(FixedBuffer* buffer) {
-  memset(buffer->buffer, 0, buffer->bufferSize);
+  memset(buffer->buffer, 0, buffer->bufferSize * sizeof(int));
 }
 
 void expandFixedBuffer(FixedBuffer* buffer) {
