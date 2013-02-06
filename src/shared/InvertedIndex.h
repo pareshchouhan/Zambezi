@@ -6,6 +6,8 @@
  *  - Dictionary, which is a mapping from term to term id
  *  - Pointers, which contains Document Frequency, Head/Tail Pointers,
  *    etc.
+ *  - DocumentVectors, which contains compressed document vector representation
+ *    of documents
  *
  * @author Nima Asadi
  */
@@ -16,11 +18,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "buffer/FixedIntCounter.h"
 #include "buffer/FixedLongCounter.h"
 #include "dictionary/Dictionary.h"
 #include "PostingsPool.h"
 #include "Pointers.h"
+#include "DocumentVector.h"
 #include "Config.h"
 
 typedef struct InvertedIndex InvertedIndex;
@@ -29,17 +33,26 @@ struct InvertedIndex {
   PostingsPool* pool;
   Dictionary** dictionary;
   Pointers* pointers;
+  DocumentVector* vectors;
 };
 
-InvertedIndex* createInvertedIndex(int reverse, int bloomEnabled,
-                                   unsigned int nbHash,
+InvertedIndex* createInvertedIndex(int reverse, int indexVectors,
+                                   int bloomEnabled, unsigned int nbHash,
                                    unsigned int bitsPerElement) {
   InvertedIndex* index = (InvertedIndex*) malloc(sizeof(InvertedIndex));
   index->pool = createPostingsPool(NUMBER_OF_POOLS, reverse, bloomEnabled,
                                    nbHash, bitsPerElement);
   index->dictionary = initDictionary();
   index->pointers = createPointers(DEFAULT_VOCAB_SIZE);
+  index->vectors = NULL;
+  if(indexVectors) {
+    index->vectors = createDocumentVector(DEFAULT_COLLECTION_SIZE);
+  }
   return index;
+}
+
+int indexDocumentVectors(InvertedIndex* index) {
+  return index->vectors != NULL;
 }
 
 int hasValidPostingsList(InvertedIndex* index, int termid) {
@@ -67,6 +80,7 @@ void destroyInvertedIndex(InvertedIndex* index) {
   destroyPostingsPool(index->pool);
   destroyDictionary(index->dictionary);
   destroyPointers(index->pointers);
+  destroyDocumentVector(index->vectors);
 }
 
 InvertedIndex* readInvertedIndex(char* rootPath) {
@@ -96,6 +110,18 @@ InvertedIndex* readInvertedIndex(char* rootPath) {
   index->pointers = readPointers(fp);
   fclose(fp);
 
+  char vectorsPath[1024];
+  strcpy(vectorsPath, rootPath);
+  strcat(vectorsPath, "/");
+  strcat(vectorsPath, DOCUMENT_VECTOR_FILE);
+  if(access(vectorsPath, F_OK)) {
+    fp = fopen(vectorsPath, "rb");
+    index->vectors = readDocumentVector(fp);
+    fclose(fp);
+  } else {
+    index->vectors = NULL;
+  }
+
   return index;
 }
 
@@ -123,6 +149,16 @@ void writeInvertedIndex(InvertedIndex* index, char* rootPath) {
   ofp = fopen(pointerPath, "wb");
   writePointers(index->pointers, ofp);
   fclose(ofp);
+
+  if(index->vectors) {
+    char vectorsPath[1024];
+    strcpy(vectorsPath, rootPath);
+    strcat(vectorsPath, "/");
+    strcat(vectorsPath, DOCUMENT_VECTOR_FILE);
+    ofp = fopen(vectorsPath, "wb");
+    writeDocumentVector(index->vectors, ofp);
+    fclose(ofp);
+  }
 }
 
 #endif

@@ -9,14 +9,12 @@ typedef struct FixedBuffer FixedBuffer;
 struct FixedBuffer {
   int* buffer;
   unsigned int bufferSize;
-  unsigned int vocabSize;
 };
 
-FixedBuffer* createFixedBuffer(unsigned int initialSize, unsigned int bufferSize) {
+FixedBuffer* createFixedBuffer(unsigned int initialSize) {
   FixedBuffer* buffer = (FixedBuffer*) malloc(sizeof(FixedBuffer));
-  buffer->vocabSize = initialSize;
-  buffer->bufferSize = bufferSize;
-  buffer->buffer = (int*) calloc(initialSize * bufferSize, sizeof(int));
+  buffer->bufferSize = initialSize;
+  buffer->buffer = (int*) calloc(initialSize, sizeof(int));
   return buffer;
 }
 
@@ -25,30 +23,22 @@ void destroyFixedBuffer(FixedBuffer* buffer) {
   free(buffer);
 }
 
+void resetFixedBuffer(FixedBuffer* buffer) {
+  memset(buffer->buffer, 0, buffer->bufferSize);
+}
+
 void expandFixedBuffer(FixedBuffer* buffer) {
-  unsigned int len = buffer->vocabSize * buffer->bufferSize;
-  int* temp = (int*) realloc(buffer->buffer, len * 2 * sizeof(int));
-  memset(&temp[len], 0, len * sizeof(int));
-  buffer->vocabSize *= 2;
+  int* temp = (int*) realloc(buffer->buffer, buffer->bufferSize * 2 * sizeof(int));
+  memset(&temp[buffer->bufferSize], 0, buffer->bufferSize * sizeof(int));
+  buffer->bufferSize *= 2;
   buffer->buffer = temp;
 }
 
-int getFixedBuffer(FixedBuffer* buffer, unsigned int index, unsigned int offset) {
-  while(index >= buffer->vocabSize) {
+void setFixedBuffer(FixedBuffer* buffer, unsigned int index, int value) {
+  while(index >= buffer->bufferSize) {
     expandFixedBuffer(buffer);
   }
-  return buffer->buffer[index * buffer->bufferSize + offset];
+  buffer->buffer[index] = value;
 }
 
-void setFixedBuffer(FixedBuffer* buffer, unsigned int index,
-                   unsigned int offset, int value) {
-  while(index >= buffer->vocabSize) {
-    expandFixedBuffer(buffer);
-  }
-  buffer->buffer[index * buffer->bufferSize + offset] = value;
-}
-
-int* getStartFixedBuffer(FixedBuffer* buffer, unsigned int index) {
-  return &buffer->buffer[index * buffer->bufferSize];
-}
 #endif

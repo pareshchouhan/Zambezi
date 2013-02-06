@@ -45,6 +45,9 @@ struct IndexingData {
   // If expansion is enabled, then what is the maximum
   // buffer length (in number of blocks)
   int maxBlocks;
+
+  // Contains the raw document
+  FixedBuffer* document;
 };
 
 void destroyIndexingData(IndexingData* data) {
@@ -53,6 +56,7 @@ void destroyIndexingData(IndexingData* data) {
     destroyFixedIntCounter(data->psum);
   }
   destroyIntSet(data->uniqueTerms);
+  destroyFixedBuffer(data->document);
   free(data);
 }
 
@@ -108,6 +112,10 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
       termid++;
     }
 
+    if(indexDocumentVectors(index)) {
+      setFixedBuffer(data->document, position - 1, id);
+    }
+
     // If we are to index tf in addition to docid
     if(data->positional == TFONLY) {
       int* curtfBuffer = getTfDynamicBuffer(data->buffer, id);
@@ -116,7 +124,6 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
         data->buffer->tf[id] = curtfBuffer;
       }
       curtfBuffer[data->buffer->valuePosition[id]]++;
-      position++;
     } else if(data->positional == POSITIONAL) {
       int* curtfBuffer = getTfDynamicBuffer(data->buffer, id);
       int* curBuffer = data->buffer->position[id];
@@ -165,9 +172,9 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
       data->buffer->pvaluePosition[id]++;
       data->buffer->position[id][ps]++;
       curtfBuffer[data->buffer->valuePosition[id]]++;
-      position++;
     }
 
+    position++;
     line += consumed;
     grabword(line, ' ', &consumed);
   }
@@ -175,6 +182,10 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
   setDocLen(index->pointers, docid, position);
   index->pointers->totalDocLen += position;
   index->pointers->totalDocs++;
+
+  if(indexDocumentVectors(index)) {
+    addDocumentVector(index->vectors, data->document->buffer, position, docid);
+  }
 
   // Iterate over all unique terms
   int keyPos = -1;
@@ -399,12 +410,17 @@ int main (int argc, char** args) {
     reverse = 1;
   }
 
+  int documentVectors = 0;
+  if(isPresentCL(argc, args, "-vectors")) {
+    documentVectors = 1;
+  }
+
   // List of input files (must be the last argument)
   int inputBeginIndex = isPresentCL(argc, args, "-input") + 1;
 
   // Creating and initializing the inverted index and its auxiliary data structures
-  InvertedIndex* index = createInvertedIndex(reverse, bloomEnabled, nbHash, bitsPerElement);
-
+  InvertedIndex* index = createInvertedIndex(reverse, documentVectors,
+                                             bloomEnabled, nbHash, bitsPerElement);
   IndexingData* data = (IndexingData*) malloc(sizeof(IndexingData));
   data->buffer = createDynamicBuffer(DEFAULT_VOCAB_SIZE, positional);
   if(positional == POSITIONAL) {
@@ -413,6 +429,7 @@ int main (int argc, char** args) {
     data->psum = NULL;
   }
   data->uniqueTerms = createIntSet(2048);
+  data->document = createFixedBuffer(2048);
   data->expansionEnabled = (maxBlocks > BLOCK_SIZE);
   data->maxBlocks = maxBlocks;
   data->positional = positional;
