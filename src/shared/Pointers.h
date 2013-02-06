@@ -12,7 +12,7 @@ typedef struct Pointers Pointers;
 
 struct Pointers {
   FixedIntCounter* df;
-  FixedLongCounter* startPointers;
+  FixedLongCounter* headPointers;
   FixedIntCounter* docLen;
   FixedIntCounter* maxTf;
   FixedIntCounter* maxTfDocLen;
@@ -23,7 +23,7 @@ struct Pointers {
 Pointers* createPointers(int size) {
   Pointers* pointers = (Pointers*) malloc(sizeof(Pointers));
   pointers->df = createFixedIntCounter(size, 0);
-  pointers->startPointers = createFixedLongCounter(size, UNDEFINED_POINTER);
+  pointers->headPointers = createFixedLongCounter(size, UNDEFINED_POINTER);
   pointers->docLen = createFixedIntCounter(size, 0);
   pointers->maxTf = createFixedIntCounter(size, 0);
   pointers->maxTfDocLen = createFixedIntCounter(size, 0);
@@ -33,7 +33,7 @@ Pointers* createPointers(int size) {
 }
 
 void destroyPointers(Pointers* pointers) {
-  destroyFixedLongCounter(pointers->startPointers);
+  destroyFixedLongCounter(pointers->headPointers);
   destroyFixedIntCounter(pointers->df);
   destroyFixedIntCounter(pointers->docLen);
   destroyFixedIntCounter(pointers->maxTf);
@@ -69,26 +69,26 @@ void setMaxTf(Pointers* pointers, int term, int tf, int dl) {
   setFixedIntCounter(pointers->maxTfDocLen, term, dl);
 }
 
-long getStartPointer(Pointers* pointers, int term) {
-  return getFixedLongCounter(pointers->startPointers, term);
+long getHeadPointer(Pointers* pointers, int term) {
+  return getFixedLongCounter(pointers->headPointers, term);
 }
 
-void setStartPointer(Pointers* pointers, int term, long sp) {
-  setFixedLongCounter(pointers->startPointers, term, sp);
+void setHeadPointer(Pointers* pointers, int term, long sp) {
+  setFixedLongCounter(pointers->headPointers, term, sp);
 }
 
 int nextTerm(Pointers* pointers, int currentTermId) {
-  return nextIndexFixedLongCounter(pointers->startPointers, currentTermId);
+  return nextIndexFixedLongCounter(pointers->headPointers, currentTermId);
 }
 
 void writePointers(Pointers* pointers, FILE* fp) {
-  int size = sizeFixedLongCounter(pointers->startPointers);
+  int size = sizeFixedLongCounter(pointers->headPointers);
   fwrite(&size, sizeof(unsigned int), 1, fp);
   int term = -1;
-  while((term = nextIndexFixedLongCounter(pointers->startPointers, term)) != -1) {
+  while((term = nextIndexFixedLongCounter(pointers->headPointers, term)) != -1) {
     fwrite(&term, sizeof(int), 1, fp);
     fwrite(&pointers->df->counter[term], sizeof(int), 1, fp);
-    fwrite(&pointers->startPointers->counter[term], sizeof(long), 1, fp);
+    fwrite(&pointers->headPointers->counter[term], sizeof(long), 1, fp);
     fwrite(&pointers->maxTf->counter[term], sizeof(int), 1, fp);
     fwrite(&pointers->maxTfDocLen->counter[term], sizeof(int), 1, fp);
   }
@@ -117,7 +117,7 @@ Pointers* readPointers(FILE* fp) {
     fread(&value, sizeof(int), 1, fp);
     setFixedIntCounter(pointers->df, term, value);
     fread(&pointer, sizeof(long), 1, fp);
-    setFixedLongCounter(pointers->startPointers, term, pointer);
+    setFixedLongCounter(pointers->headPointers, term, pointer);
     fread(&value, sizeof(int), 1, fp);
     setFixedIntCounter(pointers->maxTf, term, value);
     fread(&value, sizeof(int), 1, fp);

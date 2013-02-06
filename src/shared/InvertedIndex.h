@@ -4,7 +4,7 @@
  *
  *  - PostingsPool, which contains all segments.
  *  - Dictionary, which is a mapping from term to term id
- *  - Pointers, which contains Document Frequency, StartPointers,
+ *  - Pointers, which contains Document Frequency, Head/Tail Pointers,
  *    etc.
  *
  * @author Nima Asadi
@@ -43,11 +43,11 @@ InvertedIndex* createInvertedIndex(int reverse, int bloomEnabled,
 }
 
 int hasValidPostingsList(InvertedIndex* index, int termid) {
-  return getStartPointer(index->pointers, termid) != UNDEFINED_POINTER;
+  return getHeadPointer(index->pointers, termid) != UNDEFINED_POINTER;
 }
 
 /**
- * An iterator over terms with a valid StartPointer.
+ * An iterator over terms with a valid Head Pointer.
  * Call this function as follows:
  *
  *   int term = -1;
@@ -56,7 +56,7 @@ int hasValidPostingsList(InvertedIndex* index, int termid) {
  *   }
  */
 int nextTermId(InvertedIndex* index, int currentTermId) {
-  return nextIndexFixedLongCounter(index->pointers->startPointers, currentTermId);
+  return nextIndexFixedLongCounter(index->pointers->headPointers, currentTermId);
 }
 
 int getDf_InvertedIndex(InvertedIndex* index, int term) {

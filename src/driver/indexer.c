@@ -283,9 +283,9 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
           pointer = compressAndAddNonPositional(index->pool, curBuffer,
                                                 BLOCK_SIZE, pointer);
         }
-        // If no start pointer exists
-        if(index->pool->reverse || getStartPointer(index->pointers, id) == UNDEFINED_POINTER) {
-          setStartPointer(index->pointers, id, pointer);
+        // If no head pointer exists
+        if(index->pool->reverse || getHeadPointer(index->pointers, id) == UNDEFINED_POINTER) {
+          setHeadPointer(index->pointers, id, pointer);
         }
       } else {
         int j, ps = 0;
@@ -306,8 +306,8 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
             pointer = compressAndAddNonPositional(index->pool, &curBuffer[j * BLOCK_SIZE],
                                                   BLOCK_SIZE, pointer);
           }
-          if(index->pool->reverse || getStartPointer(index->pointers, id) == UNDEFINED_POINTER) {
-            setStartPointer(index->pointers, id, pointer);
+          if(index->pool->reverse || getHeadPointer(index->pointers, id) == UNDEFINED_POINTER) {
+            setHeadPointer(index->pointers, id, pointer);
           }
         }
       }
@@ -533,8 +533,8 @@ int main (int argc, char** args) {
             compressAndAddNonPositional(index->pool, &curBuffer[j * BLOCK_SIZE],
                                         BLOCK_SIZE, pointer);
         }
-        if(index->pool->reverse || getStartPointer(index->pointers, term) == UNDEFINED_POINTER) {
-          setStartPointer(index->pointers, term, pointer);
+        if(index->pool->reverse || getHeadPointer(index->pointers, term) == UNDEFINED_POINTER) {
+          setHeadPointer(index->pointers, term, pointer);
         }
       }
 
@@ -556,8 +556,8 @@ int main (int argc, char** args) {
             compressAndAddNonPositional(index->pool, &curBuffer[nb * BLOCK_SIZE],
                                         res, pointer);
         }
-        if(index->pool->reverse || getStartPointer(index->pointers, term) == UNDEFINED_POINTER) {
-          setStartPointer(index->pointers, term, pointer);
+        if(index->pool->reverse || getHeadPointer(index->pointers, term) == UNDEFINED_POINTER) {
+          setHeadPointer(index->pointers, term, pointer);
         }
       }
     }

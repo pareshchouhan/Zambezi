@@ -47,7 +47,7 @@ int main (int argc, char** args) {
     // Free the allocated space
     destroyPostingsList(list);
   } else {
-    // Print df for all terms that have a valid StartPointer
+    // Print df for all terms that have a valid Head Pointer
     int term = -1;
     while((term = nextTermId(index, term)) != -1) {
       printf("termid: %d  df: %d\n", term, getDf_InvertedIndex(index, term));

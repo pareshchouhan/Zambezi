@@ -50,9 +50,9 @@ int main (int argc, char** args) {
 
   int term = -1;
   while((term = nextTerm(pointers, term)) != -1) {
-    long pointer = getStartPointer(pointers, term);
+    long pointer = getHeadPointer(pointers, term);
     long newPointer = readPostingsForTerm(contiguousPool, pointer, fp);
-    setStartPointer(contiguousPointers, term, newPointer);
+    setHeadPointer(contiguousPointers, term, newPointer);
     setDf(contiguousPointers, term, getDf(pointers, term));
     setMaxTf(contiguousPointers, term,
              getMaxTf(pointers, term),

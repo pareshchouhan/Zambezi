@@ -549,7 +549,7 @@ int containsDocid(PostingsPool* pool, unsigned int docid, long* pointer) {
  * Reads postings for a term from an index stored on hard-disk,
  * and stores it into "pool."
  *
- * @param pointer StartPointer.
+ * @param pointer Head Pointer.
  */
 long readPostingsForTerm(PostingsPool* pool, long pointer, FILE* fp) {
   int sSegment = -1, ppSegment = -1;

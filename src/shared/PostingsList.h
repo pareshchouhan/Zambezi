@@ -26,7 +26,7 @@ PostingsList* getPostingsList(InvertedIndex* index, int termid) {
   list->index = index;
   list->termid = termid;
   list->df = getDf(index->pointers, termid);
-  list->pointer = getStartPointer(index->pointers, termid);
+  list->pointer = getHeadPointer(index->pointers, termid);
   list->docid = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
   list->tf = NULL;
   if(isTermFrequencyPresent(index->pool)) {

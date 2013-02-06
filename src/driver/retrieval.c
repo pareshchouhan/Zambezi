@@ -86,7 +86,7 @@ int main (int argc, char** args) {
       fscanf(fp, "%s", query);
       termid = getTermId(index->dictionary, query);
       if(termid >= 0) {
-        if(getStartPointer(index->pointers, termid) != UNDEFINED_POINTER) {
+        if(getHeadPointer(index->pointers, termid) != UNDEFINED_POINTER) {
           queries[i][pos++] = termid;
         } else {
           fqlen--;
@@ -116,7 +116,7 @@ int main (int argc, char** args) {
 
     unsigned int* qdf = (unsigned int*) calloc(qlen, sizeof(unsigned int));
     int* sortedDfIndex = (int*) calloc(qlen, sizeof(int));
-    long* qStartPointers = (long*) calloc(qlen, sizeof(long));
+    long* qHeadPointers = (long*) calloc(qlen, sizeof(long));
 
     qdf[0] = getDf(index->pointers, queries[qindex][0]);
     unsigned int minimumDf = qdf[0];
@@ -140,8 +140,8 @@ int main (int argc, char** args) {
     }
 
     for(i = 0; i < qlen; i++) {
-      qStartPointers[i] = getStartPointer(index->pointers,
-                                          queries[qindex][sortedDfIndex[i]]);
+      qHeadPointers[i] = getHeadPointer(index->pointers,
+                                        queries[qindex][sortedDfIndex[i]]);
       qdf[i] = getDf(index->pointers, queries[qindex][sortedDfIndex[i]]);
     }
 
@@ -151,7 +151,7 @@ int main (int argc, char** args) {
       if(!hitsSpecified) {
         hits = minimumDf;
       }
-      set = intersectSvS(index->pool, qStartPointers, qlen, minimumDf, hits);
+      set = intersectSvS(index->pool, qHeadPointers, qlen, minimumDf, hits);
     } else if(algorithm == WAND) {
       float* UB = (float*) malloc(qlen * sizeof(float));
       for(i = 0; i < qlen; i++) {
@@ -162,7 +162,7 @@ int main (int argc, char** args) {
                      index->pointers->totalDocLen /
                      ((float) index->pointers->totalDocs));
       }
-      set = wand(index->pool, qStartPointers, qdf, UB, qlen,
+      set = wand(index->pool, qHeadPointers, qdf, UB, qlen,
                  index->pointers->docLen->counter,
                  index->pointers->totalDocs,
                  index->pointers->totalDocLen / (float) index->pointers->totalDocs,
@@ -173,13 +173,13 @@ int main (int argc, char** args) {
       for(i = 0; i < qlen; i++) {
         UB[i] = idf(index->pointers->totalDocs, qdf[i]);
       }
-      set = bwandOr(index->pool, qStartPointers, UB, qlen, hits);
+      set = bwandOr(index->pool, qHeadPointers, UB, qlen, hits);
       free(UB);
     } else if(algorithm == BWAND_AND) {
       if(!hitsSpecified) {
         hits = minimumDf;
       }
-      set = bwandAnd(index->pool, qStartPointers, qlen, hits);
+      set = bwandAnd(index->pool, qHeadPointers, qlen, hits);
     }
 
     // If output is specified, write the retrieved set to output
@@ -193,7 +193,7 @@ int main (int argc, char** args) {
     free(set);
     free(qdf);
     free(sortedDfIndex);
-    free(qStartPointers);
+    free(qHeadPointers);
 
     gettimeofday(&end, NULL);
     printf("%10.0f length: %d\n",
