@@ -19,7 +19,7 @@ void writeDocumentVector(DocumentVector* vectors, FILE* fp) {
   fwrite(&vectors->capacity, sizeof(unsigned int), 1, fp);
   int i;
   for(i = 0; i < vectors->capacity; i++) {
-    if(vectors->document) {
+    if(vectors->document[i]) {
       fwrite(&i, sizeof(int), 1, fp);
       fwrite(&vectors->length[i], sizeof(int), 1, fp);
       fwrite(vectors->document[i], sizeof(int), vectors->length[i], fp);
@@ -87,27 +87,51 @@ int containsDocumentVector(DocumentVector* vectors, int k) {
   return vectors->document[k] != NULL;
 }
 
-void getDocumentVector(DocumentVector* vectors, unsigned int* document,
-                      unsigned int length, int k) {
+void getDocumentVector(DocumentVector* vectors, unsigned int* document, int length, int k) {
   if(k >= vectors->capacity || !vectors->document[k]) {
     document = NULL;
     return;
   }
-  unsigned int aux[length * 2];
-  detailed_p4_decode(document, vectors->document[k], aux, 0, 0);
+  unsigned int aux[BLOCK_SIZE * 4];
+  int nb = vectors->document[k][0], i, pos = 1;
+  unsigned int* buffer = (unsigned int*) calloc(nb * BLOCK_SIZE, sizeof(unsigned int));
+  for(i = 0; i < nb; i++) {
+    detailed_p4_decode(&buffer[i * BLOCK_SIZE], &vectors->document[k][pos + 1], aux, 0, 0);
+    pos += vectors->document[k][pos] + 1;
+    memset(aux, 0, BLOCK_SIZE * 4 * sizeof(unsigned int));
+  }
+  memcpy(document, buffer, length * sizeof(unsigned int));
 }
 
-void addDocumentVector(DocumentVector* vectors, unsigned int * document,
+void addDocumentVector(DocumentVector* vectors, unsigned int* document,
                        unsigned int length, int k) {
   if(k >= vectors->capacity) {
     expandDocumentVector(vectors);
   }
 
   unsigned int* block = (unsigned int*) calloc(length*2, sizeof(unsigned int));
-  vectors->length[k] = OPT4(document, length, block, 1);
-  vectors->document[k] = (unsigned int*) calloc(vectors->length[k], sizeof(unsigned int));
-  int i;
-  for(i = 0; i < vectors->length[k]; i++) {
+  int nb = length / BLOCK_SIZE;
+  int res = length % BLOCK_SIZE;
+  int csize = 1, i = 0;
+
+  for(i = 0; i < nb; i++) {
+    int tempSize = OPT4(&document[i * BLOCK_SIZE], BLOCK_SIZE, &block[csize + 1], 0);
+    block[csize] = tempSize;
+    csize += tempSize + 1;
+  }
+  if(res > 0) {
+    unsigned int* a = (unsigned int*) calloc(BLOCK_SIZE, sizeof(unsigned int));
+    memcpy(a, &document[nb * BLOCK_SIZE], res * sizeof(unsigned int));
+    int tempSize = OPT4(a, res, &block[csize + 1], 0);
+    block[csize] = tempSize;
+    csize += tempSize + 1;
+    free(a);
+    i++;
+  }
+  vectors->length[k] = csize;
+  vectors->document[k] = (unsigned int*) calloc(csize, sizeof(unsigned int));
+  vectors->document[k][0] = i;
+  for(i = 1; i < csize; i++) {
     vectors->document[k][i] = block[i];
   }
   free(block);

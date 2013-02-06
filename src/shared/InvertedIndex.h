@@ -80,7 +80,9 @@ void destroyInvertedIndex(InvertedIndex* index) {
   destroyPostingsPool(index->pool);
   destroyDictionary(index->dictionary);
   destroyPointers(index->pointers);
-  destroyDocumentVector(index->vectors);
+  if(index->vectors) {
+    destroyDocumentVector(index->vectors);
+  }
 }
 
 InvertedIndex* readInvertedIndex(char* rootPath) {
@@ -114,7 +116,8 @@ InvertedIndex* readInvertedIndex(char* rootPath) {
   strcpy(vectorsPath, rootPath);
   strcat(vectorsPath, "/");
   strcat(vectorsPath, DOCUMENT_VECTOR_FILE);
-  if(access(vectorsPath, F_OK)) {
+  int a = access(vectorsPath, F_OK);
+  if(!access(vectorsPath, F_OK)) {
     fp = fopen(vectorsPath, "rb");
     index->vectors = readDocumentVector(fp);
     fclose(fp);

@@ -97,6 +97,10 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
   docid = atoi(line);
   line += consumed;
 
+  if(indexDocumentVectors(index)) {
+    resetFixedBuffer(data->document);
+  }
+
   // positions start from 1
   int position = 1;
   clearIntSet(data->uniqueTerms);
@@ -179,6 +183,7 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
     grabword(line, ' ', &consumed);
   }
 
+  position--;
   setDocLen(index->pointers, docid, position);
   index->pointers->totalDocLen += position;
   index->pointers->totalDocs++;
