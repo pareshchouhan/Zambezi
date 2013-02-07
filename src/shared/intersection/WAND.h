@@ -11,7 +11,7 @@
 #define MIN(X, Y) (X < Y ? X : Y)
 #define TERMINAL_DOCID -1
 
-int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
+int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
          int* docLen, int totalDocs, float avgDocLen, int hits) {
   Heap* elements = initHeap(hits);
   int origLen = len;
@@ -26,8 +26,8 @@ int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
   for(i = 0; i < len; i++) {
     blockDocid[i] = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
     blockTf[i] = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
-    counts[i] = decompressDocidBlock(pool, blockDocid[i], startPointers[i]);
-    decompressTfBlock(pool, blockTf[i], startPointers[i]);
+    counts[i] = decompressDocidBlock(pool, blockDocid[i], headPointers[i]);
+    decompressTfBlock(pool, blockTf[i], headPointers[i]);
     posting[i] = 0;
     mapping[i] = i;
     if(UB[i] <= threshold) {
@@ -94,7 +94,7 @@ int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
         int aterm = mapping[atermIdx];
 
         if(posting[aterm] >= counts[aterm] - 1 &&
-           nextPointer(pool, startPointers[aterm]) == UNDEFINED_POINTER) {
+           nextPointer(pool, headPointers[aterm]) == UNDEFINED_POINTER) {
           int k = 0;
           for(i = 0; i < len; i++) {
             if(i != atermIdx) {
@@ -109,12 +109,12 @@ int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
         while(LESS_THAN_EQUAL(blockDocid[aterm][posting[aterm]], pivot, pool->reverse)) {
           posting[aterm]++;
           if(posting[aterm] > counts[aterm] - 1) {
-            startPointers[aterm] = nextPointer(pool, startPointers[aterm]);
-            if(startPointers[aterm] == UNDEFINED_POINTER) {
+            headPointers[aterm] = nextPointer(pool, headPointers[aterm]);
+            if(headPointers[aterm] == UNDEFINED_POINTER) {
               break;
             } else {
-              counts[aterm] = decompressDocidBlock(pool, blockDocid[aterm], startPointers[aterm]);
-              decompressTfBlock(pool, blockTf[aterm], startPointers[aterm]);
+              counts[aterm] = decompressDocidBlock(pool, blockDocid[aterm], headPointers[aterm]);
+              decompressTfBlock(pool, blockTf[aterm], headPointers[aterm]);
               posting[aterm] = 0;
             }
           }
@@ -129,7 +129,7 @@ int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
           int atermTemp = mapping[atermIdx];
 
           if(posting[atermTemp] >= counts[atermTemp] - 1 &&
-             nextPointer(pool, startPointers[atermTemp]) == UNDEFINED_POINTER) {
+             nextPointer(pool, headPointers[atermTemp]) == UNDEFINED_POINTER) {
             int k = 0;
             for(i = 0; i < len; i++) {
               if(i != atermIdx) {
@@ -147,12 +147,12 @@ int* wand(PostingsPool* pool, long* startPointers, int* df, float* UB, int len,
       while(LESS_THAN(blockDocid[aterm][posting[aterm]], pivot, pool->reverse)) {
         posting[aterm]++;
         if(posting[aterm] > counts[aterm] - 1) {
-          startPointers[aterm] = nextPointer(pool, startPointers[aterm]);
-          if(startPointers[aterm] == UNDEFINED_POINTER) {
+          headPointers[aterm] = nextPointer(pool, headPointers[aterm]);
+          if(headPointers[aterm] == UNDEFINED_POINTER) {
             break;
           } else {
-            counts[aterm] = decompressDocidBlock(pool, blockDocid[aterm], startPointers[aterm]);
-            decompressTfBlock(pool, blockTf[aterm], startPointers[aterm]);
+            counts[aterm] = decompressDocidBlock(pool, blockDocid[aterm], headPointers[aterm]);
+            decompressTfBlock(pool, blockTf[aterm], headPointers[aterm]);
             posting[aterm] = 0;
           }
         }

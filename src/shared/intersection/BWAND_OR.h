@@ -9,7 +9,7 @@
 
 #define TERMINAL_DOCID -1
 
-int* bwandOr(PostingsPool* pool, long* startPointers,
+int* bwandOr(PostingsPool* pool, long* headPointers,
            float* UB, int len, int hits) {
   Heap* elements = initHeap(hits);
   unsigned int* blockDocid = (unsigned int*) calloc(2 * BLOCK_SIZE, sizeof(unsigned int));
@@ -18,7 +18,7 @@ int* bwandOr(PostingsPool* pool, long* startPointers,
   float threshold = 0;
   int i, j;
 
-  count = decompressDocidBlock(pool, blockDocid, startPointers[0]);
+  count = decompressDocidBlock(pool, blockDocid, headPointers[0]);
   posting = 0;
   if(UB[0] <= threshold) {
     threshold = UB[0] - 1;
@@ -29,7 +29,7 @@ int* bwandOr(PostingsPool* pool, long* startPointers,
 
     float score = UB[0];
     for(i = 1; i < len; i++) {
-      if(containsDocid(pool, pivot, &startPointers[i])) {
+      if(containsDocid(pool, pivot, &headPointers[i])) {
         score += UB[i];
       }
     }
@@ -42,12 +42,12 @@ int* bwandOr(PostingsPool* pool, long* startPointers,
     }
 
     if(posting == count) {
-      startPointers[0] = nextPointer(pool, startPointers[0]);
-      if(startPointers[0] == UNDEFINED_POINTER) {
+      headPointers[0] = nextPointer(pool, headPointers[0]);
+      if(headPointers[0] == UNDEFINED_POINTER) {
         break;
       }
       memset(blockDocid, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
-      count = decompressDocidBlock(pool, blockDocid, startPointers[0]);
+      count = decompressDocidBlock(pool, blockDocid, headPointers[0]);
       posting = 0;
     }
   }
