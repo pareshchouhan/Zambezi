@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "Config.h"
-#include "buffer/FixedIntCounter.h"
+#include "buffer/FixedBuffer.h"
 #include "pfordelta/opt_p4.h"
 
 typedef struct DocumentVector DocumentVector;
@@ -101,6 +101,36 @@ void getDocumentVector(DocumentVector* vectors, unsigned int* document, int leng
     memset(aux, 0, BLOCK_SIZE * 4 * sizeof(unsigned int));
   }
   memcpy(document, buffer, length * sizeof(unsigned int));
+}
+
+/**
+ * First item in the position array is the term frequency.
+ */
+int** getPositions(DocumentVector* vectors, int docid, int docLength, int* query, int qlength) {
+  int** positions = (int**) calloc(qlength, sizeof(int*));
+  FixedBuffer* buffer = createFixedBuffer(10);
+  int* document = (int*) calloc(docLength, sizeof(int));
+  getDocumentVector(vectors, document, docLength, docid);
+
+  int q, t, i;
+  for(q = 0; q < qlength; q++) {
+    resetFixedBuffer(buffer);
+    i = 0;
+
+    for(t = 0; t < docLength; t++) {
+      if(document[t] == query[q]) {
+        setFixedBuffer(buffer, i++, t);
+      }
+    }
+
+    positions[q] = (int*) calloc(i + 1, sizeof(int));
+    positions[q][0] = i;
+    memcpy(&positions[q][1], buffer->buffer, i * sizeof(int));
+  }
+
+  destroyFixedBuffer(buffer);
+  free(document);
+  return positions;
 }
 
 void addDocumentVector(DocumentVector* vectors, unsigned int* document,

@@ -104,6 +104,10 @@ int main (int argc, char** args) {
     fp = fopen(outputPath, "w");
   }
 
+  BM25Parameter bm25Parameter;
+  bm25Parameter.K1 = DEFAULT_K1;
+  bm25Parameter.B = DEFAULT_B;
+
   // Evaluate queries by iterating over the queries that are not empty
   id = -1;
   while((id = nextIndexFixedIntCounter(queryLength, id)) != -1) {
@@ -160,7 +164,8 @@ int main (int argc, char** args) {
         UB[i] = bm25(tf, qdf[i],
                      index->pointers->totalDocs, dl,
                      index->pointers->totalDocLen /
-                     ((float) index->pointers->totalDocs));
+                     ((float) index->pointers->totalDocs),
+                     (void*) &bm25Parameter);
       }
       set = wand(index->pool, qHeadPointers, qdf, UB, qlen,
                  index->pointers->docLen->counter,
