@@ -116,6 +116,10 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
       termid++;
     }
 
+    // Update Collection Frequency
+    long cf = getCf(index->pointers, id);
+    index->pointers->cf->counter[id]++;
+
     if(indexDocumentVectors(index)) {
       setFixedBuffer(data->document, position - 1, id);
     }
