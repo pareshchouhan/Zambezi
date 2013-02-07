@@ -116,7 +116,6 @@ InvertedIndex* readInvertedIndex(char* rootPath) {
   strcpy(vectorsPath, rootPath);
   strcat(vectorsPath, "/");
   strcat(vectorsPath, DOCUMENT_VECTOR_FILE);
-  int a = access(vectorsPath, F_OK);
   if(!access(vectorsPath, F_OK)) {
     fp = fopen(vectorsPath, "rb");
     index->vectors = readDocumentVector(fp);

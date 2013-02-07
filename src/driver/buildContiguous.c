@@ -3,11 +3,13 @@
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+#include <unistd.h>
 #include "dictionary/Dictionary.h"
 #include "buffer/FixedIntCounter.h"
 #include "buffer/FixedLongCounter.h"
 #include "util/ParseCommandLine.h"
 #include "PostingsPool.h"
+#include "DocumentVector.h"
 #include "Pointers.h"
 #include "Config.h"
 
@@ -96,6 +98,25 @@ int main (int argc, char** args) {
   fp = fopen(opointerPath, "wb");
   writePointers(contiguousPointers, fp);
   fclose(fp);
+
+  // Copy document vectors
+  char vectorsPath[1024];
+  strcpy(vectorsPath, inputPath);
+  strcat(vectorsPath, "/");
+  strcat(vectorsPath, DOCUMENT_VECTOR_FILE);
+  if(!access(vectorsPath, F_OK)) {
+    fp = fopen(vectorsPath, "rb");
+    DocumentVector* vectors = readDocumentVector(fp);
+    fclose(fp);
+
+    strcpy(vectorsPath, outputPath);
+    strcat(vectorsPath, "/");
+    strcat(vectorsPath, DOCUMENT_VECTOR_FILE);
+    fp = fopen(vectorsPath, "wb");
+    writeDocumentVector(vectors, fp);
+    fclose(fp);
+    destroyDocumentVector(vectors);
+  }
 
   destroyDictionary(dic);
   destroyPostingsPool(contiguousPool);
