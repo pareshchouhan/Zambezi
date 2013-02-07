@@ -100,7 +100,7 @@ int nextTerm(Pointers* pointers, int currentTermId) {
 
 void updateDefaultValues(Pointers* pointers) {
   pointers->defaultDf = pointers->totalDocs / 100;
-  pointers->defaultCf = pointers->defaultDf * 2;
+  pointers->defaultCf = (long) pointers->defaultDf * 2;
   pointers->defaultIdf = (float) log((pointers->totalDocs - pointers->defaultDf + 0.5f) /
                                      (pointers->defaultDf + 0.5f));
 }

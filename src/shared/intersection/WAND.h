@@ -86,7 +86,7 @@ int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
       for(i = 0; i <= pTermIdx; i++) {
         score += bm25(blockTf[mapping[i]][posting[mapping[i]]],
                       df[mapping[i]], totalDocs, docLen[curDoc], avgDocLen,
-                      (void*) &bm25Parameter);
+                      &bm25Parameter);
       }
 
       insertHeap(elements, curDoc, score);

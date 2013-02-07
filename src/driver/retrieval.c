@@ -165,7 +165,7 @@ int main (int argc, char** args) {
                      index->pointers->totalDocs, dl,
                      index->pointers->totalDocLen /
                      ((float) index->pointers->totalDocs),
-                     (void*) &bm25Parameter);
+                     &bm25Parameter);
       }
       set = wand(index->pool, qHeadPointers, qdf, UB, qlen,
                  index->pointers->docLen->counter,
