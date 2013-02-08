@@ -16,6 +16,12 @@
 #include "intersection/WAND.h"
 #include "intersection/BWAND_AND.h"
 #include "intersection/BWAND_OR.h"
+#include "scorer/ScoringFunction.h"
+#include "scorer/BM25.h"
+#include "scorer/Dirichlet.h"
+#include "feature/TermFeature.h"
+#include "feature/OrderedWindowSequentialDependenceFeature.h"
+#include "feature/UnorderedWindowSequentialDependenceFeature.h"
 
 #ifndef RETRIEVAL_ALGO_ENUM_GUARD
 #define RETRIEVAL_ALGO_ENUM_GUARD
@@ -27,6 +33,9 @@ enum Algorithm {
   BWAND_AND = 3
 };
 #endif
+
+typedef float (*computeFeature)(int** positions, int* query, int qlength, int docid,
+                                Pointers* pointers, ScoringFunction* scorer);
 
 int main (int argc, char** args) {
   // Index path
@@ -64,6 +73,58 @@ int main (int argc, char** args) {
 
   // Read the inverted index
   InvertedIndex* index = readInvertedIndex(inputPath);
+
+  // Feature extraction
+  computeFeature* extractors = NULL;
+  ScoringFunction* scorers = NULL;
+  int totalFeatures = 0;
+  if(index->vectors && isPresentCL(argc, args, "-features")) {
+    char* featurePath = getValueCL(argc, args, "-features");
+    FILE* fp = fopen(featurePath, "r");
+    int f;
+    char featureInputText[1024];
+
+    fscanf(fp, "%d", &totalFeatures);
+    extractors = calloc(totalFeatures, sizeof(computeFeature));
+    scorers = calloc(totalFeatures, sizeof(ScoringFunction));
+    for(f = 0; f < totalFeatures; f++) {
+      fscanf(fp, "%s", featureInputText);
+      if(!strcmp(featureInputText, "BM25")) {
+        scorers[f].function = BM25;
+        BM25Parameter* param = calloc(1, sizeof(BM25Parameter));
+        int i;
+        float value = 0;
+        for(i = 0; i < 2; i++) {
+          fscanf(fp, "%[ ]%[^:]:%f", featureInputText, featureInputText, &value);
+          if(!strcmp(featureInputText, "K1")) {
+            param->K1 = value;
+          } else if(!strcmp(featureInputText, "B")) {
+            param->B = value;
+          }
+        }
+        scorers[f].parameters = (void*) param;
+      } else if(!strcmp(featureInputText, "Dirichlet")) {
+        scorers[f].function = DIRICHLET;
+        DirichletParameter* param = calloc(1, sizeof(DirichletParameter));
+        fscanf(fp, "%[ ]%[^:]:%f", featureInputText, featureInputText, &param->MU);
+        scorers[f].parameters = (void*) param;
+      }
+
+      fscanf(fp, "%s", featureInputText);
+      if(!strcmp(featureInputText, "Term")) {
+        scorers[f].phrase = 0;
+        extractors[f] = computeTermFeature;
+      } else if(!strcmp(featureInputText, "OD")) {
+        extractors[f] = computeOrderedWindowSDFeature;
+        fscanf(fp, "%[ ]%[^:]:%d", featureInputText, featureInputText, &scorers[f].phrase);
+      } else if(!strcmp(featureInputText, "UW")) {
+        extractors[f] = computeUnorderedWindowSDFeature;
+        int window;
+        fscanf(fp, "%[ ]%[^:]:%d", featureInputText, featureInputText, &window);
+        scorers[f].phrase = window * 2;
+      }
+    }
+  }
 
   // Read queries. Query file must be in the following format:
   // - First line: <number of queries: integer>
@@ -187,14 +248,40 @@ int main (int argc, char** args) {
       set = bwandAnd(index->pool, qHeadPointers, qlen, hits);
     }
 
+    // Extract features
+    float* features = NULL;
+    if(totalFeatures > 0) {
+      features = malloc(hits * totalFeatures * sizeof(float));
+      int f;
+      for(i = 0; i < hits && set[i] > 0; i++) {
+        int** positions = getPositions(index->vectors, set[i],
+                                       index->pointers->docLen->counter[set[i]],
+                                       queries[qindex], qlen);
+        for(f = 0; f < totalFeatures; f++) {
+          features[i * totalFeatures + f] =
+            extractors[f](positions, queries[qindex],
+                          qlen, set[i], index->pointers, &scorers[f]);
+        }
+        free(positions);
+      }
+    }
+
     // If output is specified, write the retrieved set to output
     if(outputPath) {
       for(i = 0; i < hits && set[i] > 0; i++) {
-        fprintf(fp, "q: %d no: %u\n", id, set[i]);
+        fprintf(fp, "%d %d ", id, set[i]);
+        if(features) {
+          int f;
+          for(f = 0; f < totalFeatures; f++) {
+            fprintf(fp, "%d:%f ", (f + 1), features[i * totalFeatures + f]);
+          }
+        }
+        fprintf(fp, "\n");
       }
     }
 
     // Free the allocated memory
+    if(features) free(features);
     free(set);
     free(qdf);
     free(sortedDfIndex);
@@ -209,6 +296,13 @@ int main (int argc, char** args) {
 
   if(outputPath) {
     fclose(fp);
+  }
+  if(extractors) {
+    for(i = 0; i < totalFeatures; i++) {
+      free(scorers[i].parameters);
+    }
+    free(extractors);
+    free(scorers);
   }
   for(i = 0; i < totalQueries; i++) {
     if(queries[i]) {

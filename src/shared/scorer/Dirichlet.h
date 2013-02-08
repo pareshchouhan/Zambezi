@@ -12,7 +12,7 @@ struct DirichletParameter {
 };
 
 float termBackgroundProb(long cf, long collectionLength) {
-  return (float) (cf / collectionLength);
+  return (float) (((double) cf) / collectionLength);
 }
 
 float dirichlet(int tf, int docLen, long cf, long collectionLength,
