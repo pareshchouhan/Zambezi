@@ -84,7 +84,9 @@ int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
                       df[mapping[i]], totalDocs, docLen[curDoc], avgDocLen);
       }
 
-      insertHeap(elements, curDoc, score);
+      if(score > threshold) {
+        insertHeap(elements, curDoc, score);
+      }
       if(isFullHeap(elements)) {
         threshold = minScoreHeap(elements);
       }
