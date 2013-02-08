@@ -25,9 +25,11 @@ int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
   int i, j;
   for(i = 0; i < len; i++) {
     blockDocid[i] = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
-    blockTf[i] = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
+    blockTf[i] = microblog ? NULL : (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
     counts[i] = decompressDocidBlock(pool, blockDocid[i], headPointers[i]);
-    decompressTfBlock(pool, blockTf[i], headPointers[i]);
+    if(!microblog) {
+      decompressTfBlock(pool, blockTf[i], headPointers[i]);
+    }
     posting[i] = 0;
     mapping[i] = i;
     if(UB[i] <= threshold) {
@@ -124,7 +126,9 @@ int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
               break;
             } else {
               counts[aterm] = decompressDocidBlock(pool, blockDocid[aterm], headPointers[aterm]);
-              decompressTfBlock(pool, blockTf[aterm], headPointers[aterm]);
+              if(!microblog) {
+                decompressTfBlock(pool, blockTf[aterm], headPointers[aterm]);
+              }
               posting[aterm] = 0;
             }
           }
@@ -162,7 +166,9 @@ int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
             break;
           } else {
             counts[aterm] = decompressDocidBlock(pool, blockDocid[aterm], headPointers[aterm]);
-            decompressTfBlock(pool, blockTf[aterm], headPointers[aterm]);
+            if(!microblog) {
+              decompressTfBlock(pool, blockTf[aterm], headPointers[aterm]);
+            }
             posting[aterm] = 0;
           }
         }
@@ -187,7 +193,9 @@ int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
   free(mapping);
   for(i = 0; i < origLen; i++) {
     free(blockDocid[i]);
-    free(blockTf[i]);
+    if(blockTf[i]) {
+      free(blockTf[i]);
+    }
   }
   free(blockDocid);
   free(blockTf);
