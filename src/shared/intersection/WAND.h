@@ -12,7 +12,7 @@
 #define TERMINAL_DOCID -1
 
 int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
-          int* docLen, int totalDocs, float avgDocLen, int hits) {
+          int* docLen, int totalDocs, float avgDocLen, int hits, int microblog) {
   Heap* elements = initHeap(hits);
   int origLen = len;
   unsigned int** blockDocid = (unsigned int**) calloc(len, sizeof(unsigned int*));
@@ -79,16 +79,24 @@ int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
     if(blockDocid[mapping[0]][posting[mapping[0]]] == pivot) {
       curDoc = pivot;
       float score = 0;
-      for(i = 0; i <= pTermIdx; i++) {
-        score += _default_bm25(blockTf[mapping[i]][posting[mapping[i]]],
-                      df[mapping[i]], totalDocs, docLen[curDoc], avgDocLen);
+      if(!microblog) {
+        for(i = 0; i <= pTermIdx; i++) {
+          score += _default_bm25(blockTf[mapping[i]][posting[mapping[i]]],
+                                 df[mapping[i]], totalDocs, docLen[curDoc], avgDocLen);
+        }
+      } else {
+        score = sum;
       }
 
       if(score > threshold) {
         insertHeap(elements, curDoc, score);
       }
+
       if(isFullHeap(elements)) {
         threshold = minScoreHeap(elements);
+        if(microblog && len == 1) {
+          break;
+        }
       }
 
       int atermIdx;

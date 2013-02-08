@@ -29,8 +29,9 @@ typedef enum Algorithm Algorithm;
 enum Algorithm {
   SVS = 0,
   WAND = 1,
-  BWAND_OR = 2,
-  BWAND_AND = 3
+  MBWAND = 2,
+  BWAND_OR = 3,
+  BWAND_AND = 4
 };
 #endif
 
@@ -62,12 +63,14 @@ int main (int argc, char** args) {
     algorithm = SVS;
   } else if(!strcmp(intersectionAlgorithm, "WAND")) {
     algorithm = WAND;
+  } else if(!strcmp(intersectionAlgorithm, "MBWAND")) {
+    algorithm = MBWAND;
   } else if(!strcmp(intersectionAlgorithm, "BWAND_OR")) {
     algorithm = BWAND_OR;
   } else if(!strcmp(intersectionAlgorithm, "BWAND_AND")) {
     algorithm = BWAND_AND;
   } else {
-    printf("Invalid algorithm (Options: SvS | WAND | BWAND_OR | BWAND_AND)\n");
+    printf("Invalid algorithm (Options: SvS | WAND | MBWAND | BWAND_OR | BWAND_AND)\n");
     return;
   }
 
@@ -213,7 +216,7 @@ int main (int argc, char** args) {
         hits = minimumDf;
       }
       set = intersectSvS(index->pool, qHeadPointers, qlen, minimumDf, hits);
-    } else if(algorithm == WAND) {
+    } else if(algorithm == WAND || algorithm == MBWAND) {
       float* UB = (float*) malloc(qlen * sizeof(float));
       for(i = 0; i < qlen; i++) {
         int tf = getMaxTf(index->pointers, queries[qindex][sortedDfIndex[i]]);
@@ -227,7 +230,7 @@ int main (int argc, char** args) {
                  index->pointers->docLen->counter,
                  index->pointers->totalDocs,
                  index->pointers->totalDocLen / (float) index->pointers->totalDocs,
-                 hits);
+                 hits, algorithm == MBWAND);
       free(UB);
     } else if(algorithm == BWAND_OR) {
       float* UB = (float*) malloc(qlen * sizeof(float));
