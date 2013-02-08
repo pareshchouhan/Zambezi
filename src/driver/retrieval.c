@@ -165,10 +165,6 @@ int main (int argc, char** args) {
     fp = fopen(outputPath, "w");
   }
 
-  BM25Parameter bm25Parameter;
-  bm25Parameter.K1 = DEFAULT_K1;
-  bm25Parameter.B = DEFAULT_B;
-
   // Evaluate queries by iterating over the queries that are not empty
   id = -1;
   while((id = nextIndexFixedIntCounter(queryLength, id)) != -1) {
@@ -222,11 +218,10 @@ int main (int argc, char** args) {
       for(i = 0; i < qlen; i++) {
         int tf = getMaxTf(index->pointers, queries[qindex][sortedDfIndex[i]]);
         int dl = getMaxTfDocLen(index->pointers, queries[qindex][sortedDfIndex[i]]);
-        UB[i] = bm25(tf, qdf[i],
-                     index->pointers->totalDocs, dl,
-                     index->pointers->totalDocLen /
-                     ((float) index->pointers->totalDocs),
-                     &bm25Parameter);
+        UB[i] = _default_bm25(tf, qdf[i],
+                              index->pointers->totalDocs, dl,
+                              index->pointers->totalDocLen /
+                              ((float) index->pointers->totalDocs));
       }
       set = wand(index->pool, qHeadPointers, qdf, UB, qlen,
                  index->pointers->docLen->counter,

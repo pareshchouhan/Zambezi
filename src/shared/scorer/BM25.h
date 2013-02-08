@@ -18,16 +18,24 @@ float idf(int numDocs, int df) {
                      / ((float) df + 0.5f));
 }
 
+float _default_bm25tf(int tf, int docLen, float avgDocLen) {
+  return ((1.0f + DEFAULT_K1) * tf) / (DEFAULT_K1 * (1.0f - DEFAULT_B + DEFAULT_B * docLen / avgDocLen) + tf);
+}
+
+float _default_bm25(int tf, int df, int numDocs, int docLen, float avgDocLen) {
+  return _default_bm25tf(tf, docLen, avgDocLen) * idf(numDocs, df);
+}
+
 float bm25tf(int tf, int docLen, float avgDocLen, float K1, float B) {
   return ((1.0f + K1) * tf) / (K1 * (1.0f - B + B * docLen / avgDocLen) + tf);
 }
 
-float bm25(int tf, int df, int numDocs, int docLen, float avgDocLen, BM25Parameter* parameters) {
-  return bm25tf(tf, docLen, avgDocLen, parameters->K1, parameters->B) * idf(numDocs, df);
+float bm25(int tf, int df, int numDocs, int docLen, float avgDocLen, float K1, float B) {
+  return bm25tf(tf, docLen, avgDocLen, K1, B) * idf(numDocs, df);
 }
 
-float bm25Phrase(int tf, int docLen, float avgDocLen, float defaultIdf, BM25Parameter* parameters) {
-  return bm25tf(tf, docLen, avgDocLen, parameters->K1, parameters->B) * defaultIdf;
+float bm25Phrase(int tf, int docLen, float avgDocLen, float defaultIdf, float K1, float B) {
+  return bm25tf(tf, docLen, avgDocLen, K1, B) * defaultIdf;
 }
 
 #endif

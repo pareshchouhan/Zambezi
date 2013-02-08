@@ -204,15 +204,13 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
     if(data->positional == TFONLY || data->positional == POSITIONAL) {
       int tf = data->buffer->tf[id][data->buffer->valuePosition[id]];
       int dl = getDocLen(index->pointers, docid);
-      float bm25TfScore = bm25tf(tf, dl,
-                                 index->pointers->totalDocLen /
-                                 ((float) index->pointers->totalDocs),
-                                 DEFAULT_K1, DEFAULT_B);
-      float maxBm25TfScore = bm25tf(getMaxTf(index->pointers, id),
-                                    getMaxTfDocLen(index->pointers, id),
-                                    index->pointers->totalDocLen /
-                                    ((float) index->pointers->totalDocs),
-                                    DEFAULT_K1, DEFAULT_B);
+      float bm25TfScore = _default_bm25tf(tf, dl,
+                                          index->pointers->totalDocLen /
+                                          ((float) index->pointers->totalDocs));
+      float maxBm25TfScore = _default_bm25tf(getMaxTf(index->pointers, id),
+                                             getMaxTfDocLen(index->pointers, id),
+                                             index->pointers->totalDocLen /
+                                             ((float) index->pointers->totalDocs));
       if(bm25TfScore > maxBm25TfScore) {
         setMaxTf(index->pointers, id, tf, dl);
       }

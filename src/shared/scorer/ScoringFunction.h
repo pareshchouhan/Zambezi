@@ -21,27 +21,31 @@ struct ScoringFunction {
 float computeTermScoringFunction(ScoringFunction* scorer, int query,
                                  int docid, int tf, Pointers* pointers) {
   if(scorer->function == BM25) {
+    BM25Parameter* param = (BM25Parameter*) scorer->parameters;
     return bm25(tf, pointers->df->counter[query], pointers->totalDocs,
                 pointers->docLen->counter[docid],
                 pointers->totalDocLen / (float) pointers->totalDocs,
-                (BM25Parameter*) scorer->parameters);
+                param->K1, param->B);
   } else if(scorer->function == DIRICHLET) {
+    DirichletParameter* param = (DirichletParameter*) scorer->parameters;
     return dirichlet(tf, pointers->docLen->counter[docid],
                      pointers->cf->counter[query], pointers->totalDocLen,
-                     (DirichletParameter*) scorer->parameters);
+                     param->MU);
   }
 }
 
 float computePhraseScoringFunction(ScoringFunction* scorer,
                                    int docid, int tf, Pointers* pointers) {
   if(scorer->function == BM25) {
+    BM25Parameter* param = (BM25Parameter*) scorer->parameters;
     return bm25Phrase(tf, pointers->docLen->counter[docid],
                       pointers->totalDocLen / (float) pointers->totalDocs,
-                      pointers->defaultIdf, (BM25Parameter*) scorer->parameters);
+                      pointers->defaultIdf, param->K1, param->B);
   } else if(scorer->function == DIRICHLET && scorer->phrase) {
+    DirichletParameter* param = (DirichletParameter*) scorer->parameters;
     return dirichlet(tf, pointers->docLen->counter[docid],
                      pointers->defaultCf, pointers->totalDocLen,
-                     (DirichletParameter*) scorer->parameters);
+                     param->MU);
   }
 }
 

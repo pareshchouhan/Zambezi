@@ -12,11 +12,7 @@
 #define TERMINAL_DOCID -1
 
 int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
-         int* docLen, int totalDocs, float avgDocLen, int hits) {
-  BM25Parameter bm25Parameter;
-  bm25Parameter.K1 = DEFAULT_K1;
-  bm25Parameter.B = DEFAULT_B;
-
+          int* docLen, int totalDocs, float avgDocLen, int hits) {
   Heap* elements = initHeap(hits);
   int origLen = len;
   unsigned int** blockDocid = (unsigned int**) calloc(len, sizeof(unsigned int*));
@@ -84,9 +80,8 @@ int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
       curDoc = pivot;
       float score = 0;
       for(i = 0; i <= pTermIdx; i++) {
-        score += bm25(blockTf[mapping[i]][posting[mapping[i]]],
-                      df[mapping[i]], totalDocs, docLen[curDoc], avgDocLen,
-                      &bm25Parameter);
+        score += _default_bm25(blockTf[mapping[i]][posting[mapping[i]]],
+                      df[mapping[i]], totalDocs, docLen[curDoc], avgDocLen);
       }
 
       insertHeap(elements, curDoc, score);
