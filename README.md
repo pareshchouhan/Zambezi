@@ -36,7 +36,7 @@ Retrieval
 
 To do retrieval:
 
-	out/driver/retrieval -index <index-root-path> -query <query-path> -algorithm <SvS|WAND|BWAND_OR|BWAND_AND>
+	out/driver/retrieval -index <index-root-path> -query <query-path> -algorithm <SvS|WAND|MBWAND|BWAND_OR|BWAND_AND>
 	[-features <feature-path>]
 	[-hits <hits>] [-output <output-path>]
 
