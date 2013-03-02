@@ -34,6 +34,7 @@ void insertIntoBloomFilter(unsigned int* filter, unsigned int filterSize,
                            int nbHash, unsigned int value) {
   unsigned int seed = DEFAULT_HASH_SEED;
   unsigned int h;
+  filterSize *= BLOOM_FILTER_UNIT_SIZE;
   int i = 0;
   for(i = 0; i < nbHash; i++) {
     seed = hash(value, seed);
@@ -48,6 +49,7 @@ int containsBloomFilter(unsigned int* filter, unsigned int filterSize,
                         int nbHash, unsigned int value) {
   unsigned int seed = DEFAULT_HASH_SEED;
   unsigned int h;
+  filterSize *= BLOOM_FILTER_UNIT_SIZE;
   int i = 0;
   for(i = 0; i < nbHash; i++) {
     seed = hash(value, seed);

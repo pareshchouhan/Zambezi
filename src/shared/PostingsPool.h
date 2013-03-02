@@ -144,7 +144,7 @@ long compressAndAddNonPositional(PostingsPool* pool, unsigned int* data,
     filter = (unsigned int*) calloc(filterSize, sizeof(unsigned int));
     int i;
     for(i = 0; i < len; i++) {
-      insertIntoBloomFilter(filter, filterSize * sizeof(unsigned int), pool->nbHash, data[i]);
+      insertIntoBloomFilter(filter, filterSize, pool->nbHash, data[i]);
     }
   }
 
@@ -219,7 +219,7 @@ long compressAndAddTfOnly(PostingsPool* pool, unsigned int* data,
     filter = (unsigned int*) calloc(filterSize, sizeof(unsigned int));
     int i;
     for(i = 0; i < len; i++) {
-      insertIntoBloomFilter(filter, filterSize * sizeof(unsigned int), pool->nbHash, data[i]);
+      insertIntoBloomFilter(filter, filterSize, pool->nbHash, data[i]);
     }
   }
 
@@ -308,7 +308,7 @@ long compressAndAddPositional(PostingsPool* pool, unsigned int* data,
     filter = (unsigned int*) calloc(filterSize, sizeof(unsigned int));
     int i;
     for(i = 0; i < len; i++) {
-      insertIntoBloomFilter(filter, filterSize * sizeof(unsigned int), pool->nbHash, data[i]);
+      insertIntoBloomFilter(filter, filterSize, pool->nbHash, data[i]);
     }
   }
 

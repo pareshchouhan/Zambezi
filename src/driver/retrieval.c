@@ -22,6 +22,7 @@
 #include "feature/TermFeature.h"
 #include "feature/OrderedWindowSequentialDependenceFeature.h"
 #include "feature/UnorderedWindowSequentialDependenceFeature.h"
+#include "model/trees/TreeBuilder.h"
 
 #ifndef RETRIEVAL_ALGO_ENUM_GUARD
 #define RETRIEVAL_ALGO_ENUM_GUARD
@@ -80,17 +81,17 @@ int main (int argc, char** args) {
   // Feature extraction
   computeFeature* extractors = NULL;
   ScoringFunction* scorers = NULL;
-  int totalFeatures = 0;
+  int numberOfFeatures = 0;
   if(index->vectors && isPresentCL(argc, args, "-features")) {
     char* featurePath = getValueCL(argc, args, "-features");
     FILE* fp = fopen(featurePath, "r");
     int f;
     char featureInputText[1024];
 
-    fscanf(fp, "%d", &totalFeatures);
-    extractors = calloc(totalFeatures, sizeof(computeFeature));
-    scorers = calloc(totalFeatures, sizeof(ScoringFunction));
-    for(f = 0; f < totalFeatures; f++) {
+    fscanf(fp, "%d", &numberOfFeatures);
+    extractors = calloc(numberOfFeatures, sizeof(computeFeature));
+    scorers = calloc(numberOfFeatures, sizeof(ScoringFunction));
+    for(f = 0; f < numberOfFeatures; f++) {
       fscanf(fp, "%s", featureInputText);
       if(!strcmp(featureInputText, "BM25")) {
         scorers[f].function = BM25;
@@ -127,6 +128,19 @@ int main (int argc, char** args) {
         scorers[f].phrase = window * 2;
       }
     }
+  }
+
+  // Read LambdaMART model
+  TreeModel* treeModel = NULL;
+  float* scores = NULL;
+  if(isPresentCL(argc, args, "-model")) {
+    treeModel = parseTrees(getValueCL(argc, args, "-model"));
+
+    int nb = hits;
+    if(nb % V != 0) {
+      nb = ((nb/V) + 1) * V;
+    }
+    scores = malloc(nb * sizeof(float));
   }
 
   // Read queries. Query file must be in the following format:
@@ -221,10 +235,14 @@ int main (int argc, char** args) {
       for(i = 0; i < qlen; i++) {
         int tf = getMaxTf(index->pointers, queries[qindex][sortedDfIndex[i]]);
         int dl = getMaxTfDocLen(index->pointers, queries[qindex][sortedDfIndex[i]]);
-        UB[i] = _default_bm25(tf, qdf[i],
-                              index->pointers->totalDocs, dl,
-                              index->pointers->totalDocLen /
-                              ((float) index->pointers->totalDocs));
+        if(algorithm == WAND) {
+          UB[i] = _default_bm25(tf, qdf[i],
+                                index->pointers->totalDocs, dl,
+                                index->pointers->totalDocLen /
+                                ((float) index->pointers->totalDocs));
+        } else {
+          UB[i] = idf(index->pointers->totalDocs, qdf[i]);
+        }
       }
       set = wand(index->pool, qHeadPointers, qdf, UB, qlen,
                  index->pointers->docLen->counter,
@@ -248,19 +266,42 @@ int main (int argc, char** args) {
 
     // Extract features
     float* features = NULL;
-    if(totalFeatures > 0) {
-      features = malloc(hits * totalFeatures * sizeof(float));
+    int numberOfInstances = 0;
+    if(numberOfFeatures > 0) {
+      features = malloc(hits * numberOfFeatures * sizeof(float));
       int f;
       for(i = 0; i < hits && set[i] > 0; i++) {
         int** positions = getPositions(index->vectors, set[i],
                                        index->pointers->docLen->counter[set[i]],
                                        queries[qindex], qlen);
-        for(f = 0; f < totalFeatures; f++) {
-          features[i * totalFeatures + f] =
+        for(f = 0; f < numberOfFeatures; f++) {
+          features[i * numberOfFeatures + f] =
             extractors[f](positions, queries[qindex],
                           qlen, set[i], index->pointers, &scorers[f]);
         }
         free(positions);
+        numberOfInstances++;
+      }
+    }
+
+    if(treeModel) {
+      if(numberOfInstances % V != 0) {
+        numberOfInstances = ((numberOfInstances/V) + 1) * V;
+      }
+      int leaf[V];
+      int iIndex, tIndex, j;
+      for(iIndex = 0; iIndex < numberOfInstances; iIndex+=V) {
+        for(j = 0; j < V; j++) {
+          scores[iIndex + j] = 0;
+        }
+        for(tIndex = 0; tIndex < treeModel->nbTrees; tIndex++) {
+          findLeaf[treeModel->treeDepths[tIndex]](leaf, &features[iIndex * numberOfFeatures],
+                                                  numberOfFeatures,
+                                                  &treeModel->nodes[treeModel->nodeSizes[tIndex]]);
+          for(j = 0; j < V; j++) {
+            scores[iIndex + j] += treeModel->nodes[treeModel->nodeSizes[tIndex]+leaf[j]].theta;
+          }
+        }
       }
     }
 
@@ -268,11 +309,13 @@ int main (int argc, char** args) {
     if(outputPath) {
       for(i = 0; i < hits && set[i] > 0; i++) {
         fprintf(fp, "%d %d ", id, set[i]);
-        if(features) {
+        if(features && !treeModel) {
           int f;
-          for(f = 0; f < totalFeatures; f++) {
-            fprintf(fp, "%d:%f ", (f + 1), features[i * totalFeatures + f]);
+          for(f = 0; f < numberOfFeatures; f++) {
+            fprintf(fp, "%d:%f ", (f + 1), features[i * numberOfFeatures + f]);
           }
+        } else if(treeModel) {
+          fprintf(fp, "%f ", scores[i]);
         }
         fprintf(fp, "\n");
       }
@@ -296,7 +339,7 @@ int main (int argc, char** args) {
     fclose(fp);
   }
   if(extractors) {
-    for(i = 0; i < totalFeatures; i++) {
+    for(i = 0; i < numberOfFeatures; i++) {
       free(scorers[i].parameters);
     }
     free(extractors);
@@ -307,6 +350,8 @@ int main (int argc, char** args) {
       free(queries[i]);
     }
   }
+  if(treeModel) destroyTreeModel(treeModel);
+  if(scores) free(scores);
   free(queries);
   destroyFixedIntCounter(queryLength);
   destroyFixedIntCounter(idToIndexMap);
