@@ -6,6 +6,7 @@
 #include <string.h>
 #include "PostingsPool.h"
 
+#define MIN(X, Y) (X < Y ? X : Y)
 #define TERMINAL_DOCID -1
 
 // Gallop to >= docid
@@ -101,7 +102,7 @@ int* intersectPostingsLists_SvS(PostingsPool* pool, long a, long b, int minDf) {
   int cB = decompressDocidBlock(pool, dataB, b);
   int iSet = 0, iA = 0, iB = 0;
 
-  while(a != UNDEFINED_POINTER && b != UNDEFINED_POINTER) {
+  while(a != UNDEFINED_POINTER && b != UNDEFINED_POINTER && iSet < minDf) {
     if(dataB[iB] == dataA[iA]) {
       set[iSet++] = dataA[iA];
       iA++;
@@ -209,19 +210,22 @@ int intersectSetPostingsList_SvS(PostingsPool* pool, long a, int* currentSet, in
 int* intersectSvS(PostingsPool* pool, long* headPointers, int len, int minDf, int hits) {
   if(len < 2) {
     unsigned int* block = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
-    int* set = (int*) calloc(minDf, sizeof(int));
+    int length = MIN(minDf, hits);
+    int* set = (int*) calloc(length, sizeof(int));
     int iSet = 0;
     long t = headPointers[0];
-    while(t != UNDEFINED_POINTER) {
+    while(t != UNDEFINED_POINTER && iSet < length) {
       memset(block, 0, BLOCK_SIZE * 2 * sizeof(unsigned int));
       int c = decompressDocidBlock(pool, block, t);
-      int r = iSet + c <= hits ? c : hits - iSet;
+      int r = iSet + c <= length ? c : length - iSet;
       memcpy(&set[iSet], block, r * sizeof(int));
       iSet += r;
       t = nextPointer(pool, t);
     }
     free(block);
     return set;
+  } else if(len == 2) {
+    return intersectPostingsLists_SvS(pool, headPointers[0], headPointers[1], MIN(minDf, hits));
   }
 
   int* set = intersectPostingsLists_SvS(pool, headPointers[0], headPointers[1], minDf);
