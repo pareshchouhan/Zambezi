@@ -17,6 +17,10 @@ int* bwandOr(PostingsPool* pool, long* headPointers,
   int posting;
   float threshold = 0;
   int i, j;
+  float sumOfUB = 0;
+  for(i = 0; i < len; i++) {
+    sumOfUB += UB[i];
+  }
 
   count = decompressDocidBlock(pool, blockDocid, headPointers[0]);
   posting = 0;
@@ -38,6 +42,9 @@ int* bwandOr(PostingsPool* pool, long* headPointers,
       insertHeap(elements, pivot, score);
       if(isFullHeap(elements)) {
         threshold = minScoreHeap(elements);
+        if(threshold == sumOfUB) {
+          break;
+        }
       }
     }
 
