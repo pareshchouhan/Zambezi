@@ -76,7 +76,7 @@ void expandDocumentVector(DocumentVector* vectors) {
   int i;
   for(i = vectors->capacity; i < vectors->capacity * 2; i++) {
     tempDocument[i] = NULL;
-    tempLength = 0;
+    tempLength[i] = 0;
   }
   vectors->document = tempDocument;
   vectors->length = tempLength;
