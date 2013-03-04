@@ -14,6 +14,8 @@
 #include "InvertedIndex.h"
 #include "intersection/SvS.h"
 #include "intersection/WAND.h"
+#include "intersection/WANDPositions.h"
+#include "heap/HeapWithPositions.h"
 #include "intersection/BWAND_AND.h"
 #include "intersection/BWAND_OR.h"
 #include "scorer/ScoringFunction.h"
@@ -22,7 +24,7 @@
 #include "feature/TermFeature.h"
 #include "feature/OrderedWindowSequentialDependenceFeature.h"
 #include "feature/UnorderedWindowSequentialDependenceFeature.h"
-#include "model/trees/TreeBuilder.h"
+//#include "model/trees/TreeBuilder.h"
 
 #ifndef RETRIEVAL_ALGO_ENUM_GUARD
 #define RETRIEVAL_ALGO_ENUM_GUARD
@@ -32,7 +34,9 @@ enum Algorithm {
   WAND = 1,
   MBWAND = 2,
   BWAND_OR = 3,
-  BWAND_AND = 4
+  BWAND_AND = 4,
+  WAND_FEATURES = 5,
+  MBWAND_FEATURES = 6,
 };
 #endif
 
@@ -64,6 +68,10 @@ int main (int argc, char** args) {
     algorithm = SVS;
   } else if(!strcmp(intersectionAlgorithm, "WAND")) {
     algorithm = WAND;
+  } else if(!strcmp(intersectionAlgorithm, "WANDFeatures")) {
+    algorithm = WAND_FEATURES;
+  } else if(!strcmp(intersectionAlgorithm, "MBWANDFeatures")) {
+    algorithm = MBWAND_FEATURES;
   } else if(!strcmp(intersectionAlgorithm, "MBWAND")) {
     algorithm = MBWAND;
   } else if(!strcmp(intersectionAlgorithm, "BWAND_OR")) {
@@ -71,7 +79,8 @@ int main (int argc, char** args) {
   } else if(!strcmp(intersectionAlgorithm, "BWAND_AND")) {
     algorithm = BWAND_AND;
   } else {
-    printf("Invalid algorithm (Options: SvS | WAND | MBWAND | BWAND_OR | BWAND_AND)\n");
+    printf("Invalid algorithm (Options: SvS | WAND | ");
+    printf("MBWAND | BWAND_OR | BWAND_AND | WANDFeatures | MBWANDFeatures)\n");
     return;
   }
 
@@ -82,7 +91,7 @@ int main (int argc, char** args) {
   computeFeature* extractors = NULL;
   ScoringFunction* scorers = NULL;
   int numberOfFeatures = 0;
-  if(index->vectors && isPresentCL(argc, args, "-features")) {
+  if(isPresentCL(argc, args, "-features")) {
     char* featurePath = getValueCL(argc, args, "-features");
     FILE* fp = fopen(featurePath, "r");
     int f;
@@ -130,6 +139,7 @@ int main (int argc, char** args) {
     }
   }
 
+  /*
   // Read LambdaMART model
   TreeModel* treeModel = NULL;
   float* scores = NULL;
@@ -142,6 +152,7 @@ int main (int argc, char** args) {
     }
     scores = malloc(nb * sizeof(float));
   }
+  */
 
   // Read queries. Query file must be in the following format:
   // - First line: <number of queries: integer>
@@ -224,7 +235,7 @@ int main (int argc, char** args) {
     }
 
     // Compute intersection set (or in disjunctive mode, top-k)
-    int* set;
+    int* set = NULL;
     if(algorithm == SVS) {
       if(!hitsSpecified) {
         hits = minimumDf;
@@ -267,7 +278,8 @@ int main (int argc, char** args) {
     // Extract features
     float* features = NULL;
     int numberOfInstances = 0;
-    if(numberOfFeatures > 0) {
+    if(numberOfFeatures > 0 && algorithm != WAND_FEATURES &&
+       algorithm != MBWAND_FEATURES) {
       features = malloc(hits * numberOfFeatures * sizeof(float));
       int f;
       for(i = 0; i < hits && set[i] > 0; i++) {
@@ -282,8 +294,45 @@ int main (int argc, char** args) {
         free(positions);
         numberOfInstances++;
       }
+    } else if(numberOfFeatures > 0 &&
+              (algorithm == WAND_FEATURES || algorithm == MBWAND_FEATURES)) {
+      float* UB = (float*) malloc(qlen * sizeof(float));
+      for(i = 0; i < qlen; i++) {
+        int tf = getMaxTf(index->pointers, queries[qindex][sortedDfIndex[i]]);
+        int dl = getMaxTfDocLen(index->pointers, queries[qindex][sortedDfIndex[i]]);
+        if(algorithm == WAND_FEATURES) {
+          UB[i] = _default_bm25(tf, qdf[i],
+                                index->pointers->totalDocs, dl,
+                                index->pointers->totalDocLen /
+                                ((float) index->pointers->totalDocs));
+        } else {
+          UB[i] = idf(index->pointers->totalDocs, qdf[i]);
+        }
+      }
+      Candidate** candidates = wandPositions(index->pool, qHeadPointers, qdf, UB, qlen,
+                                             index->pointers->docLen->counter,
+                                             index->pointers->totalDocs,
+                                             index->pointers->totalDocLen / (float) index->pointers->totalDocs,
+                                             hits, algorithm == MBWAND_FEATURES);
+      free(UB);
+
+      set = calloc(hits, sizeof(int));
+      features = malloc(hits * numberOfFeatures * sizeof(float));
+      for(i = 0; candidates[i] != NULL; i++) {
+        set[i] = candidates[i]->docid;
+        int f;
+        for(f = 0; f < numberOfFeatures; f++) {
+          features[i * numberOfFeatures + f] =
+            extractors[f](candidates[i]->positions, queries[qindex],
+                          qlen, set[i], index->pointers, &scorers[f]);
+        }
+        numberOfInstances++;
+        destroyCandidate(candidates[i], qlen);
+      }
+      free(candidates);
     }
 
+    /*
     if(treeModel) {
       if(numberOfInstances % V != 0) {
         numberOfInstances = ((numberOfInstances/V) + 1) * V;
@@ -304,19 +353,20 @@ int main (int argc, char** args) {
         }
       }
     }
+    */
 
     // If output is specified, write the retrieved set to output
     if(outputPath) {
       for(i = 0; i < hits && set[i] > 0; i++) {
         fprintf(fp, "%d %d ", id, set[i]);
-        if(features && !treeModel) {
+        if(features) {// && !treeModel) {
           int f;
           for(f = 0; f < numberOfFeatures; f++) {
             fprintf(fp, "%d:%f ", (f + 1), features[i * numberOfFeatures + f]);
           }
-        } else if(treeModel) {
+        }/* else if(treeModel) {
           fprintf(fp, "%f ", scores[i]);
-        }
+          }*/
         fprintf(fp, "\n");
       }
     }
@@ -350,8 +400,8 @@ int main (int argc, char** args) {
       free(queries[i]);
     }
   }
-  if(treeModel) destroyTreeModel(treeModel);
-  if(scores) free(scores);
+  //  if(treeModel) destroyTreeModel(treeModel);
+  //  if(scores) free(scores);
   free(queries);
   destroyFixedIntCounter(queryLength);
   destroyFixedIntCounter(idToIndexMap);

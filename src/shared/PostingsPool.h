@@ -516,6 +516,50 @@ int decompressPositionBlock(PostingsPool* pool, unsigned int* outBlock, long poi
   return pool->pool[pSegment][pOffset + csize + tfsize + 8];
 }
 
+void decompressPositions(PostingsPool* pool, unsigned int* tf,
+                         int index, long pointer, int* out) {
+  int pSegment = DECODE_SEGMENT(pointer);
+  unsigned int pOffset = DECODE_OFFSET(pointer);
+
+  unsigned int aux[BLOCK_SIZE*4];
+  unsigned int csize = pool->pool[pSegment][pOffset + 6];
+  unsigned int tfsize = pool->pool[pSegment][pOffset + 7 + csize];
+  int nb = 0;
+  int i;
+  for(i = 0; i < index; i++) {
+    nb += tf[i];
+  }
+  int lnb = nb + tf[i] - 1;
+  int r = nb % BLOCK_SIZE;
+  nb = nb / BLOCK_SIZE;
+  lnb = lnb / BLOCK_SIZE;
+
+  unsigned int pos = pOffset + csize + tfsize + 10;
+  for(i = 0; i < nb; i++) {
+    pos += pool->pool[pSegment][pos] + 1;
+  }
+  int cindex = 0, left = tf[index], tocopy = tf[index], rindex = r;
+  for(i = nb; i <= lnb; i++) {
+    if(rindex + tocopy > BLOCK_SIZE) {
+      tocopy = BLOCK_SIZE - rindex;
+    }
+    unsigned int* block = &pool->pool[pSegment][pos + 1];
+    unsigned int* temp = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
+    detailed_p4_decode(temp, block, aux, 0, pool->reverse);
+    memcpy(&out[cindex], &temp[rindex], tocopy * sizeof(int));
+    pos += pool->pool[pSegment][pos] + 1;
+    free(temp);
+
+    cindex += tocopy;
+    left -= tocopy;
+    tocopy = left;
+    rindex = 0;
+  }
+  for(i = 1; i < tf[index]; i++) {
+    out[i] += out[i - 1];
+  }
+}
+
 int containsDocid(PostingsPool* pool, unsigned int docid, long* pointer) {
   if(*pointer == UNDEFINED_POINTER) {
     return 0;
