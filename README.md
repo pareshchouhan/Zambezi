@@ -36,12 +36,14 @@ Retrieval
 
 To do retrieval:
 
-	out/driver/retrieval -index <index-root-path> -query <query-path> -algorithm <SvS|WAND|MBWAND|BWAND_OR|BWAND_AND>
+	out/driver/retrieval -index <index-root-path> -query <query-path>
+	-algorithm <SvS|WAND|MBWAND|BWAND_OR|BWAND_AND|WANDFeatures|MBWANDFeatures>
 	[-features <feature-path>]
 	[-hits <hits>] [-output <output-path>]
 
 `-features` tells the driver to compute feature values for the top documents,
-only if the index is augmented with document vectors.
+only if the index is augmented with document vectors or the algorithm is
+set to `WANDFeatures` or `MBWANDFeatures`.
 <feature-path> is the path to the file that contains feature definitions.
 Please see `sample/features` for a sample feature set.
 

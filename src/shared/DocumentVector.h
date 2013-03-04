@@ -119,7 +119,7 @@ int** getPositions(DocumentVector* vectors, int docid, int docLength, int* query
 
     for(t = 0; t < docLength; t++) {
       if(document[t] == query[q]) {
-        setFixedBuffer(buffer, i++, t);
+        setFixedBuffer(buffer, i++, t + 1);
       }
     }
 

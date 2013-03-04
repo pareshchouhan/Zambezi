@@ -218,15 +218,22 @@ int main (int argc, char** args) {
     }
 
     // Sort query terms w.r.t. df
-    for(i = 0; i < qlen; i++) {
-      unsigned int minDf = 0xFFFFFFFF;
-      for(j = 0; j < qlen; j++) {
-        if(qdf[j] < minDf) {
-          minDf = qdf[j];
-          sortedDfIndex[i] = j;
+    if(algorithm == SVS || algorithm == BWAND_AND ||
+       algorithm == BWAND_OR) {
+      for(i = 0; i < qlen; i++) {
+        unsigned int minDf = 0xFFFFFFFF;
+        for(j = 0; j < qlen; j++) {
+          if(qdf[j] < minDf) {
+            minDf = qdf[j];
+            sortedDfIndex[i] = j;
+          }
         }
+        qdf[sortedDfIndex[i]] = 0xFFFFFFFF;
       }
-      qdf[sortedDfIndex[i]] = 0xFFFFFFFF;
+    } else {
+      for(i = 0; i < qlen; i++) {
+        sortedDfIndex[i] = i;
+      }
     }
 
     for(i = 0; i < qlen; i++) {
