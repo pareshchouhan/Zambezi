@@ -91,7 +91,8 @@ int main (int argc, char** args) {
   computeFeature* extractors = NULL;
   ScoringFunction* scorers = NULL;
   int numberOfFeatures = 0;
-  if(isPresentCL(argc, args, "-features")) {
+  if((index->vectors || algorithm == WAND_FEATURES || algorithm == MBWAND_FEATURES) &&
+     isPresentCL(argc, args, "-features")) {
     char* featurePath = getValueCL(argc, args, "-features");
     FILE* fp = fopen(featurePath, "r");
     int f;
