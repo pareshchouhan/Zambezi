@@ -13,6 +13,8 @@ struct DocumentVector {
   unsigned int** document;
   unsigned int* length;
   unsigned int capacity;
+
+  FixedBuffer* buffer;
 };
 
 void writeDocumentVector(DocumentVector* vectors, FILE* fp) {
@@ -31,6 +33,7 @@ void writeDocumentVector(DocumentVector* vectors, FILE* fp) {
 
 DocumentVector* readDocumentVector(FILE* fp) {
   DocumentVector* vectors = (DocumentVector*) malloc(sizeof(DocumentVector));
+  vectors->buffer = createFixedBuffer(10);
   fread(&vectors->capacity, sizeof(unsigned int), 1, fp);
   vectors->document = (unsigned int**) calloc(vectors->capacity, sizeof(unsigned int*));
   vectors->length = (unsigned int*) calloc(vectors->capacity, sizeof(unsigned int));
@@ -65,6 +68,7 @@ void destroyDocumentVector(DocumentVector* vectors) {
   }
   free(vectors->document);
   free(vectors->length);
+  destroyFixedBuffer(vectors->buffer);
   free(vectors);
 }
 
@@ -101,6 +105,7 @@ void getDocumentVector(DocumentVector* vectors, unsigned int* document, int leng
     memset(aux, 0, BLOCK_SIZE * 4 * sizeof(unsigned int));
   }
   memcpy(document, buffer, length * sizeof(unsigned int));
+  free(buffer);
 }
 
 /**
@@ -108,27 +113,24 @@ void getDocumentVector(DocumentVector* vectors, unsigned int* document, int leng
  */
 int** getPositions(DocumentVector* vectors, int docid, int docLength, int* query, int qlength) {
   int** positions = (int**) calloc(qlength, sizeof(int*));
-  FixedBuffer* buffer = createFixedBuffer(10);
   int* document = (int*) calloc(docLength, sizeof(int));
   getDocumentVector(vectors, document, docLength, docid);
 
   int q, t, i;
   for(q = 0; q < qlength; q++) {
-    resetFixedBuffer(buffer);
+    resetFixedBuffer(vectors->buffer);
     i = 0;
 
     for(t = 0; t < docLength; t++) {
       if(document[t] == query[q]) {
-        setFixedBuffer(buffer, i++, t + 1);
+        setFixedBuffer(vectors->buffer, i++, t + 1);
       }
     }
 
     positions[q] = (int*) calloc(i + 1, sizeof(int));
     positions[q][0] = i;
-    memcpy(&positions[q][1], buffer->buffer, i * sizeof(int));
+    memcpy(&positions[q][1], vectors->buffer->buffer, i * sizeof(int));
   }
-
-  destroyFixedBuffer(buffer);
   free(document);
   return positions;
 }

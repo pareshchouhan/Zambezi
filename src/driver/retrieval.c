@@ -299,6 +299,9 @@ int main (int argc, char** args) {
             extractors[f](positions, queries[qindex],
                           qlen, set[i], index->pointers, &scorers[f]);
         }
+        for(f = 0; f < qlen; f++) {
+          free(positions[f]);
+        }
         free(positions);
         numberOfInstances++;
       }
