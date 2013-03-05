@@ -288,23 +288,33 @@ int main (int argc, char** args) {
     int numberOfInstances = 0;
     if(numberOfFeatures > 0 && algorithm != WAND_FEATURES &&
        algorithm != MBWAND_FEATURES) {
-      features = malloc(hits * numberOfFeatures * sizeof(float));
       int f;
+      features = malloc(hits * numberOfFeatures * sizeof(float));
+      FixedBuffer** buffer = malloc(qlen * sizeof(FixedBuffer*));
+      int** positions = malloc(qlen * sizeof(int*));
+      for(f = 0; f < qlen; f++) {
+        buffer[f] = createFixedBuffer(10);
+      }
+
       for(i = 0; i < hits && set[i] > 0; i++) {
-        int** positions = getPositions(index->vectors, set[i],
-                                       index->pointers->docLen->counter[set[i]],
-                                       queries[qindex], qlen);
+        getPositionsAsBuffers(index->vectors, set[i],
+                              index->pointers->docLen->counter[set[i]],
+                              queries[qindex], qlen, buffer);
+        for(f = 0; f < qlen; f++) {
+          positions[f] = buffer[f]->buffer;
+        }
         for(f = 0; f < numberOfFeatures; f++) {
           features[i * numberOfFeatures + f] =
             extractors[f](positions, queries[qindex],
                           qlen, set[i], index->pointers, &scorers[f]);
         }
-        for(f = 0; f < qlen; f++) {
-          free(positions[f]);
-        }
-        free(positions);
         numberOfInstances++;
       }
+      for(f = 0; f < qlen; f++) {
+        destroyFixedBuffer(buffer[f]);
+      }
+      free(buffer);
+      free(positions);
     } else if(numberOfFeatures > 0 &&
               (algorithm == WAND_FEATURES || algorithm == MBWAND_FEATURES)) {
       float* UB = (float*) malloc(qlen * sizeof(float));
