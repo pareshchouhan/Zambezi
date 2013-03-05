@@ -78,46 +78,48 @@ Candidate** wandPositions(PostingsPool* pool, long* headPointers, int* df, float
 
     if(blockDocid[mapping[0]][posting[mapping[0]]] == pivot) {
       curDoc = pivot;
-      float score = 0;
-      if(!microblog) {
-        for(i = 0; i <= pTermIdx; i++) {
-          score += _default_bm25(blockTf[mapping[i]][posting[mapping[i]]],
-                                 df[mapping[i]], totalDocs, docLen[curDoc], avgDocLen);
-        }
-      } else {
-        score = sum;
-      }
-
-      if(score > threshold) {
-        Candidate* candidate = malloc(sizeof(candidate));
-        candidate->docid = curDoc;
-        candidate->positions = (int**) calloc(origLen, sizeof(int*));
-        int m;
-        for(m = 0; m < origLen; m++) {
-          candidate->positions[m] = NULL;
-        }
-
-        for(m = 0; m <= pTermIdx; m++) {
-          candidate->positions[mapping[m]] =
-            calloc(blockTf[mapping[m]][posting[mapping[m]]] + 1, sizeof(int));
-          candidate->positions[mapping[m]][0] = blockTf[mapping[m]][posting[mapping[m]]];
-          decompressPositions(pool, blockTf[mapping[m]], posting[mapping[m]],
-                              headPointers[mapping[m]], &candidate->positions[mapping[m]][1]);
-        }
-
-        for(m = 0; m < origLen; m++) {
-          if(!candidate->positions[m]) {
-            candidate->positions[m] = calloc(1, sizeof(int));
+      if(pivot != 0) {
+        float score = 0;
+        if(!microblog) {
+          for(i = 0; i <= pTermIdx; i++) {
+            score += _default_bm25(blockTf[mapping[i]][posting[mapping[i]]],
+                                   df[mapping[i]], totalDocs, docLen[curDoc], avgDocLen);
           }
+        } else {
+          score = sum;
         }
 
-        insertHeapWithPositions(elements, candidate, score);
-      }
+        if(score > threshold) {
+          Candidate* candidate = malloc(sizeof(candidate));
+          candidate->docid = curDoc;
+          candidate->positions = (int**) calloc(origLen, sizeof(int*));
+          int m;
+          for(m = 0; m < origLen; m++) {
+            candidate->positions[m] = NULL;
+          }
 
-      if(isFullHeapWithPositions(elements)) {
-        threshold = minScoreHeapWithPositions(elements);
-        if(microblog && len == 1) {
-          break;
+          for(m = 0; m <= pTermIdx; m++) {
+            candidate->positions[mapping[m]] =
+              calloc(blockTf[mapping[m]][posting[mapping[m]]] + 1, sizeof(int));
+            candidate->positions[mapping[m]][0] = blockTf[mapping[m]][posting[mapping[m]]];
+            decompressPositions(pool, blockTf[mapping[m]], posting[mapping[m]],
+                                headPointers[mapping[m]], &candidate->positions[mapping[m]][1]);
+          }
+
+          for(m = 0; m < origLen; m++) {
+            if(!candidate->positions[m]) {
+              candidate->positions[m] = calloc(1, sizeof(int));
+            }
+          }
+
+          insertHeapWithPositions(elements, candidate, score);
+        }
+
+        if(isFullHeapWithPositions(elements)) {
+          threshold = minScoreHeapWithPositions(elements);
+          if(microblog && len == 1) {
+            break;
+          }
         }
       }
 

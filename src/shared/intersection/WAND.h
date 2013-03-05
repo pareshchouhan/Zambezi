@@ -80,24 +80,26 @@ int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
 
     if(blockDocid[mapping[0]][posting[mapping[0]]] == pivot) {
       curDoc = pivot;
-      float score = 0;
-      if(!microblog) {
-        for(i = 0; i <= pTermIdx; i++) {
-          score += _default_bm25(blockTf[mapping[i]][posting[mapping[i]]],
-                                 df[mapping[i]], totalDocs, docLen[curDoc], avgDocLen);
+      if(pivot != 0) {
+        float score = 0;
+        if(!microblog) {
+          for(i = 0; i <= pTermIdx; i++) {
+            score += _default_bm25(blockTf[mapping[i]][posting[mapping[i]]],
+                                   df[mapping[i]], totalDocs, docLen[curDoc], avgDocLen);
+          }
+        } else {
+          score = sum;
         }
-      } else {
-        score = sum;
-      }
 
-      if(score > threshold) {
-        insertHeap(elements, curDoc, score);
-      }
+        if(score > threshold) {
+          insertHeap(elements, curDoc, score);
+        }
 
-      if(isFullHeap(elements)) {
-        threshold = minScoreHeap(elements);
-        if(microblog && len == 1) {
-          break;
+        if(isFullHeap(elements)) {
+          threshold = minScoreHeap(elements);
+          if(microblog && len == 1) {
+            break;
+          }
         }
       }
 
