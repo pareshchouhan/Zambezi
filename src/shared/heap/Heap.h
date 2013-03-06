@@ -23,6 +23,11 @@ Heap* initHeap(int size) {
   return heap;
 }
 
+void clearHeap(Heap* heap) {
+  heap->index = 0;
+  heap->score[0] = -FLT_MAX;
+}
+
 void destroyHeap(Heap* heap) {
   free(heap->docid);
   free(heap->score);

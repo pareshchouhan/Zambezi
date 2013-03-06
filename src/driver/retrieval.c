@@ -16,6 +16,7 @@
 #include "intersection/WAND.h"
 #include "intersection/WANDPositions.h"
 #include "heap/HeapWithPositions.h"
+#include "heap/Heap.h"
 #include "intersection/BWAND_AND.h"
 #include "intersection/BWAND_OR.h"
 #include "scorer/ScoringFunction.h"
@@ -24,7 +25,7 @@
 #include "feature/TermFeature.h"
 #include "feature/OrderedWindowSequentialDependenceFeature.h"
 #include "feature/UnorderedWindowSequentialDependenceFeature.h"
-//#include "model/trees/TreeBuilder.h"
+#include "model/trees/TreeBuilder.h"
 
 #ifndef RETRIEVAL_ALGO_ENUM_GUARD
 #define RETRIEVAL_ALGO_ENUM_GUARD
@@ -140,10 +141,10 @@ int main (int argc, char** args) {
     }
   }
 
-  /*
   // Read LambdaMART model
   TreeModel* treeModel = NULL;
   float* scores = NULL;
+  Heap* rankedList = initHeap(hits);
   if(isPresentCL(argc, args, "-model")) {
     treeModel = parseTrees(getValueCL(argc, args, "-model"));
 
@@ -153,7 +154,6 @@ int main (int argc, char** args) {
     }
     scores = malloc(nb * sizeof(float));
   }
-  */
 
   // Read queries. Query file must be in the following format:
   // - First line: <number of queries: integer>
@@ -351,9 +351,11 @@ int main (int argc, char** args) {
         destroyCandidate(candidates[i], qlen);
       }
       free(candidates);
+      if(i < hits) {
+        set[i] = TERMINAL_DOCID;
+      }
     }
 
-    /*
     if(treeModel) {
       if(numberOfInstances % V != 0) {
         numberOfInstances = ((numberOfInstances/V) + 1) * V;
@@ -373,21 +375,32 @@ int main (int argc, char** args) {
           }
         }
       }
+
+      clearHeap(rankedList);
+      for(i = 0; i < hits && set[i] > 0; i++) {
+        insertHeap(rankedList, set[i], scores[i]);
+      }
+      while(i-- >= 0) {
+        set[i] = rankedList->docid[1];
+        scores[i] = rankedList->score[i];
+        deleteMinHeap(rankedList);
+      }
     }
-    */
 
     // If output is specified, write the retrieved set to output
     if(outputPath) {
       for(i = 0; i < hits && set[i] > 0; i++) {
-        fprintf(fp, "%d %d ", id, set[i]);
-        if(features) {// && !treeModel) {
+        if(!features && !treeModel) {
+          fprintf(fp, "%d %d ", id, set[i]);
+        } else if(features && !treeModel) {
+          fprintf(fp, "%d %d ", id, set[i]);
           int f;
           for(f = 0; f < numberOfFeatures; f++) {
             fprintf(fp, "%d:%f ", (f + 1), features[i * numberOfFeatures + f]);
           }
-        }/* else if(treeModel) {
-          fprintf(fp, "%f ", scores[i]);
-          }*/
+        } else if(treeModel) {
+          fprintf(fp, "%d Q0 %d %d %f zambezi", id, set[i], i + 1, scores[i]);
+        }
         fprintf(fp, "\n");
       }
     }
@@ -421,9 +434,10 @@ int main (int argc, char** args) {
       free(queries[i]);
     }
   }
-  //  if(treeModel) destroyTreeModel(treeModel);
-  //  if(scores) free(scores);
+  if(treeModel) destroyTreeModel(treeModel);
+  if(scores) free(scores);
   free(queries);
+  destroyHeap(rankedList);
   destroyFixedIntCounter(queryLength);
   destroyFixedIntCounter(idToIndexMap);
   destroyInvertedIndex(index);
