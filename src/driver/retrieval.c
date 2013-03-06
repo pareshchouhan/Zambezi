@@ -380,10 +380,11 @@ int main (int argc, char** args) {
       for(i = 0; i < hits && set[i] > 0; i++) {
         insertHeap(rankedList, set[i], scores[i]);
       }
-      while(i-- >= 0) {
-        set[i] = rankedList->docid[1];
-        scores[i] = rankedList->score[i];
+      while(i > 0) {
+        set[i - 1] = rankedList->docid[1];
+        scores[i - 1] = rankedList->score[1];
         deleteMinHeap(rankedList);
+        i--;
       }
     }
 
