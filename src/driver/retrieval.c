@@ -91,7 +91,10 @@ int main (int argc, char** args) {
   // Feature extraction
   computeFeature* extractors = NULL;
   ScoringFunction* scorers = NULL;
+  float** staticFeatures = NULL;
   int numberOfFeatures = 0;
+  int numberOfStaticFeatures = 0;
+  int totalFeatures = 0;
   if((index->vectors || algorithm == WAND_FEATURES || algorithm == MBWAND_FEATURES) &&
      isPresentCL(argc, args, "-features")) {
     char* featurePath = getValueCL(argc, args, "-features");
@@ -139,6 +142,17 @@ int main (int argc, char** args) {
         scorers[f].phrase = window * 2;
       }
     }
+
+    fscanf(fp, "%d", &numberOfStaticFeatures);
+    if(numberOfStaticFeatures > 0) {
+      staticFeatures = calloc(numberOfStaticFeatures, sizeof(float*));
+      for(f = 0; f < numberOfStaticFeatures; f++) {
+        staticFeatures[f] = malloc(index->pointers->totalDocs * sizeof(float));
+        fread(staticFeatures[f], sizeof(float), index->pointers->totalDocs, fp);
+      }
+    }
+
+    totalFeatures = numberOfFeatures + numberOfStaticFeatures;
   }
 
   // Read LambdaMART model
@@ -289,7 +303,7 @@ int main (int argc, char** args) {
     if(numberOfFeatures > 0 && algorithm != WAND_FEATURES &&
        algorithm != MBWAND_FEATURES) {
       int f;
-      features = malloc(hits * numberOfFeatures * sizeof(float));
+      features = malloc(hits * totalFeatures * sizeof(float));
       FixedBuffer** buffer = malloc(qlen * sizeof(FixedBuffer*));
       int** positions = malloc(qlen * sizeof(int*));
       for(f = 0; f < qlen; f++) {
@@ -304,9 +318,13 @@ int main (int argc, char** args) {
           positions[f] = buffer[f]->buffer;
         }
         for(f = 0; f < numberOfFeatures; f++) {
-          features[i * numberOfFeatures + f] =
+          features[i * totalFeatures + f] =
             extractors[f](positions, queries[qindex],
                           qlen, set[i], index->pointers, &scorers[f]);
+        }
+        for(f = 0; f < numberOfStaticFeatures; f++) {
+          features[i * totalFeatures + numberOfFeatures + f] =
+            staticFeatures[f][set[i]];
         }
         numberOfInstances++;
       }
@@ -338,14 +356,18 @@ int main (int argc, char** args) {
       free(UB);
 
       set = calloc(hits, sizeof(int));
-      features = malloc(hits * numberOfFeatures * sizeof(float));
+      features = malloc(hits * totalFeatures * sizeof(float));
       for(i = 0; candidates[i] != NULL; i++) {
         set[i] = candidates[i]->docid;
         int f;
         for(f = 0; f < numberOfFeatures; f++) {
-          features[i * numberOfFeatures + f] =
+          features[i * totalFeatures + f] =
             extractors[f](candidates[i]->positions, queries[qindex],
                           qlen, set[i], index->pointers, &scorers[f]);
+        }
+        for(f = 0; f < numberOfStaticFeatures; f++) {
+          features[i * totalFeatures + numberOfFeatures + f] =
+            staticFeatures[f][set[i]];
         }
         numberOfInstances++;
         destroyCandidate(candidates[i], qlen);
@@ -367,8 +389,8 @@ int main (int argc, char** args) {
           scores[iIndex + j] = 0;
         }
         for(tIndex = 0; tIndex < treeModel->nbTrees; tIndex++) {
-          findLeaf[treeModel->treeDepths[tIndex]](leaf, &features[iIndex * numberOfFeatures],
-                                                  numberOfFeatures,
+          findLeaf[treeModel->treeDepths[tIndex]](leaf, &features[iIndex * totalFeatures],
+                                                  totalFeatures,
                                                   &treeModel->nodes[treeModel->nodeSizes[tIndex]]);
           for(j = 0; j < V; j++) {
             scores[iIndex + j] += treeModel->nodes[treeModel->nodeSizes[tIndex]+leaf[j]].theta;
@@ -396,8 +418,8 @@ int main (int argc, char** args) {
         } else if(features && !treeModel) {
           fprintf(fp, "%d %d ", id, set[i]);
           int f;
-          for(f = 0; f < numberOfFeatures; f++) {
-            fprintf(fp, "%d:%f ", (f + 1), features[i * numberOfFeatures + f]);
+          for(f = 0; f < totalFeatures; f++) {
+            fprintf(fp, "%d:%f ", (f + 1), features[i * totalFeatures + f]);
           }
         } else if(treeModel) {
           fprintf(fp, "%d Q0 %d %d %f zambezi", id, set[i], i + 1, scores[i]);
@@ -422,6 +444,12 @@ int main (int argc, char** args) {
 
   if(outputPath) {
     fclose(fp);
+  }
+  if(numberOfStaticFeatures > 0) {
+    for(i = 0; i < numberOfStaticFeatures; i++) {
+      free(staticFeatures[i]);
+    }
+    free(staticFeatures);
   }
   if(extractors) {
     for(i = 0; i < numberOfFeatures; i++) {
