@@ -30,14 +30,24 @@
 #define RETRIEVAL_ALGO_ENUM_GUARD
 typedef enum Algorithm Algorithm;
 enum Algorithm {
-  SVS = 0,
-  WAND = 1,
-  MBWAND = 2,
-  BWAND_OR = 3,
-  BWAND_AND = 4,
+  SVS = 0, // Conjunctive query evaluation using SvS
+  WAND = 1, // Disjunctive query evaluation using WAND
+  MBWAND = 2, // Disjunctive query evaluation using WAND_IDF
+  BWAND_OR = 3, // Disjunctive BWAND
+  BWAND_AND = 4, // Conjunctive BWAND
 };
 #endif
 
+/**
+ * Pointers to feature computation functions.
+ *
+ * @param positions List of positions for every query term
+ * @param query List of query terms
+ * @param qlength Number of query terms
+ * @param docid Document id of the document to extract features for
+ * @param pointers Dictionary Pointers
+ * @param scorer Scoring function
+ */
 typedef float (*computeFeature)(int** positions, int* query, int qlength, int docid,
                                 Pointers* pointers, ScoringFunction* scorer);
 
@@ -71,14 +81,14 @@ int main (int argc, char** args) {
     algorithm = BWAND_AND;
   } else {
     printf("Invalid algorithm (Options: SvS | WAND | ");
-    printf("MBWAND | BWAND_OR | BWAND_AND )\n");
+    printf("MBWAND | BWAND_OR | BWAND_AND)\n");
     return;
   }
 
   // Read the inverted index
   InvertedIndex* index = readInvertedIndex(inputPath);
 
-  // Feature extraction
+  // Feature extraction: read and parse features
   computeFeature* extractors = NULL;
   ScoringFunction* scorers = NULL;
   float** staticFeatures = NULL;
@@ -144,7 +154,7 @@ int main (int argc, char** args) {
     totalFeatures = numberOfFeatures + numberOfStaticFeatures;
   }
 
-  // Read LambdaMART model
+  // Read LambdaMART model (evaluation is done using VPred)
   TreeModel* treeModel = NULL;
   float* scores = NULL;
   Heap* rankedList = initHeap(hits);
@@ -299,23 +309,27 @@ int main (int argc, char** args) {
       }
 
       for(i = 0; i < hits && set[i] > 0; i++) {
+        // Generate positions for query terms
         getPositionsAsBuffers(index->vectors, set[i],
                               index->pointers->docLen->counter[set[i]],
                               queries[qindex], qlen, buffer);
         for(f = 0; f < qlen; f++) {
           positions[f] = buffer[f]->buffer;
         }
+        // Compute feature values using the positions
         for(f = 0; f < numberOfFeatures; f++) {
           features[i * totalFeatures + f] =
             extractors[f](positions, queries[qindex],
                           qlen, set[i], index->pointers, &scorers[f]);
         }
+        // Extract static features
         for(f = 0; f < numberOfStaticFeatures; f++) {
           features[i * totalFeatures + numberOfFeatures + f] =
             staticFeatures[f][set[i]];
         }
         numberOfInstances++;
       }
+      // Free temporary memory
       for(f = 0; f < qlen; f++) {
         destroyFixedBuffer(buffer[f]);
       }
@@ -323,6 +337,7 @@ int main (int argc, char** args) {
       free(positions);
     }
 
+    // If a tree model (LambdaMART) is provided, rank the instances
     if(treeModel) {
       if(numberOfInstances % V != 0) {
         numberOfInstances = ((numberOfInstances/V) + 1) * V;
@@ -343,6 +358,7 @@ int main (int argc, char** args) {
         }
       }
 
+      // Rank documents using relevance scores
       clearHeap(rankedList);
       for(i = 0; i < hits && set[i] > 0; i++) {
         insertHeap(rankedList, set[i], scores[i]);
@@ -361,12 +377,14 @@ int main (int argc, char** args) {
         if(!features && !treeModel) {
           fprintf(fp, "%d %d ", id, set[i]);
         } else if(features && !treeModel) {
+          // Qid, Docid, list of feature values in SVM-Light format
           fprintf(fp, "%d %d ", id, set[i]);
           int f;
           for(f = 0; f < totalFeatures; f++) {
             fprintf(fp, "%d:%f ", (f + 1), features[i * totalFeatures + f]);
           }
         } else if(treeModel) {
+          // Print ranked list in TREC format
           fprintf(fp, "%d Q0 %d %d %f zambezi", id, set[i], i + 1, scores[i]);
         }
         fprintf(fp, "\n");
