@@ -1,3 +1,7 @@
+/**
+ * Document Vectors Index
+ */
+
 #ifndef DOCUMENT_VECTOR_H_GUARD
 #define DOCUMENT_VECTOR_H_GUARD
 
@@ -9,12 +13,23 @@
 
 typedef struct DocumentVector DocumentVector;
 
+// An expandable table that contains a PFOR compressed
+// document vector per document id
 struct DocumentVector {
+  // Compressed document vectors
   unsigned int** document;
+  // Length of vectors
   unsigned int* length;
+  // Capacity of the array
   unsigned int capacity;
 };
 
+/**
+ * Write a Document Vectors index to output file.
+ *
+ * @param vectors Document vectors index
+ * @param fp Output binary file
+ */
 void writeDocumentVector(DocumentVector* vectors, FILE* fp) {
   fwrite(&vectors->capacity, sizeof(unsigned int), 1, fp);
   int i;
@@ -29,6 +44,12 @@ void writeDocumentVector(DocumentVector* vectors, FILE* fp) {
   fwrite(&i, sizeof(int), 1, fp);
 }
 
+/**
+ * Read a Document Vectors index from input file.
+ *
+ * @param fp Input binary file
+ * @return Document vectors index
+ */
 DocumentVector* readDocumentVector(FILE* fp) {
   DocumentVector* vectors = (DocumentVector*) malloc(sizeof(DocumentVector));
   fread(&vectors->capacity, sizeof(unsigned int), 1, fp);
@@ -46,6 +67,12 @@ DocumentVector* readDocumentVector(FILE* fp) {
   return vectors;
 }
 
+/**
+ * Creates a new document vectors index.
+ *
+ * @param initialSize Initial capacity of the table (max number of rows)
+ * @return A document vectors index
+ */
 DocumentVector* createDocumentVector(unsigned int initialSize) {
   DocumentVector* vectors = (DocumentVector*)
     malloc(sizeof(DocumentVector));
@@ -56,6 +83,9 @@ DocumentVector* createDocumentVector(unsigned int initialSize) {
   return vectors;
 }
 
+/**
+ * Free used memory
+ */
 void destroyDocumentVector(DocumentVector* vectors) {
   int i;
   for(i = 0; i < vectors->capacity; i++) {
@@ -68,6 +98,9 @@ void destroyDocumentVector(DocumentVector* vectors) {
   free(vectors);
 }
 
+/**
+ * Expand table by a factor of 2.
+ */
 void expandDocumentVector(DocumentVector* vectors) {
   unsigned int** tempDocument = (unsigned int**) realloc(vectors->document,
       vectors->capacity * 2 * sizeof(unsigned int*));
@@ -83,10 +116,21 @@ void expandDocumentVector(DocumentVector* vectors) {
   vectors->capacity *= 2;
 }
 
-int containsDocumentVector(DocumentVector* vectors, int k) {
-  return vectors->document[k] != NULL;
+/**
+ * Whether or not a document vector is stored for the given document id
+ */
+int containsDocumentVector(DocumentVector* vectors, int docid) {
+  return vectors->document[docid] != NULL;
 }
 
+/**
+ * Decompress document vector associated with the given document id.
+ *
+ * @param vectors Document vectors index
+ * @param document Output document vector
+ * @param length Length of the document
+ * @param k Document id
+ */
 void getDocumentVector(DocumentVector* vectors, unsigned int* document, int length, int k) {
   if(k >= vectors->capacity || !vectors->document[k]) {
     document = NULL;
@@ -105,7 +149,14 @@ void getDocumentVector(DocumentVector* vectors, unsigned int* document, int leng
 }
 
 /**
+ * Return a list of positions for each query term.
  * First item in the position array is the term frequency.
+ *
+ * @param vectors Document vectors index
+ * @param docid Document id
+ * @param docLength Document length
+ * @param query Query terms
+ * @param qlength Number of query terms
  */
 int** getPositions(DocumentVector* vectors, int docid, int docLength, int* query, int qlength) {
   int** positions = (int**) calloc(qlength, sizeof(int*));
@@ -162,6 +213,14 @@ void getPositionsAsBuffers(DocumentVector* vectors, int docid, int docLength,
   free(aux);
 }
 
+/**
+ * Compress and insert a document vector into the index.
+ *
+ * @param vectors Document vectors index
+ * @param document Document vector
+ * @param length Document length
+ * @param k Document id
+ */
 void addDocumentVector(DocumentVector* vectors, unsigned int* document,
                        unsigned int length, int k) {
   if(k >= vectors->capacity) {

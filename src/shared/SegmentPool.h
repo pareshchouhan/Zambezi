@@ -7,14 +7,19 @@
 #include "pfordelta/opt_p4.h"
 #include "bloom/BloomFilter.h"
 
+// Pool size
 #define MAX_INT_VALUE ((unsigned int) 0xFFFFFFFF)
+// Null pointers to determine the end of a postings list
 #define UNDEFINED_POINTER -1l
 #define UNKNOWN_SEGMENT -1
+
+// Operators defined based on whether or not the postings are backwards
 #define LESS_THAN(X,Y,R) (R == 0 ? (X < Y) : (X > Y))
 #define LESS_THAN_EQUAL(X,Y,R) (R == 0 ? (X <= Y) : (X >= Y))
 #define GREATER_THAN(X,Y,R) (R == 0 ? (X > Y) : (X < Y))
 #define GREATER_THAN_EQUAL(X,Y,R) (R == 0 ? (X >= Y) : (X <= Y))
 
+// Functions to encode/decode segment and offset values
 #define DECODE_SEGMENT(P) ((int) (P >> 32))
 #define DECODE_OFFSET(P) ((unsigned int) (P & 0xFFFFFFFF))
 #define ENCODE_POINTER(S, O) ((((unsigned long) S)<<32) | (unsigned int) O)
@@ -25,7 +30,9 @@ struct SegmentPool {
   unsigned int numberOfPools;
   unsigned int segment;
   unsigned int offset;
+  // Whether or not postings are stored backwards
   unsigned int reverse;
+  // Segment pool
   int** pool;
 
   // if Bloom filters enabled
@@ -69,6 +76,9 @@ SegmentPool* readSegmentPool(FILE* fp) {
   return pool;
 }
 
+/**
+ * Read whether or not postings are stored backwards in the segment pool
+ */
 int readReverseFlag(FILE* fp) {
   int r;
   fseek(fp, 0, SEEK_SET);
@@ -78,6 +88,18 @@ int readReverseFlag(FILE* fp) {
   return r;
 }
 
+/**
+ * Create a new segment pool.
+ *
+ * @param numberOfPools Number of pools, where each pool is an array of integers
+ * @param reverse Whether to store postings in reverse order (e.g., to index tweets)
+ * @param bloomEnabled Whether or not to use Bloom filter chains (to be used with BWAND)
+ * @param nbHash If Bloom filter chains are enabled,
+ *        this indicates the number of hash functions
+ * @param bitsPerElement If Bloom filter chains are enabled,
+ *        this indicates number of bits per element
+ * @return A new segment pool kept in the main memory
+ */
 SegmentPool* createSegmentPool(int numberOfPools, int reverse, int bloomEnabled,
                                  int nbHash, int bitsPerElement) {
   SegmentPool* pool = (SegmentPool*) malloc(sizeof(SegmentPool));
@@ -105,6 +127,9 @@ void destroySegmentPool(SegmentPool* pool) {
   free(pool);
 }
 
+/**
+ * Whether or not the index contains term frequency (tf) information
+ */
 int isTermFrequencyPresent(SegmentPool* pool) {
   int reqspace = pool->pool[0][0];
   int csize = pool->pool[0][4];
@@ -114,6 +139,9 @@ int isTermFrequencyPresent(SegmentPool* pool) {
   return 1;
 }
 
+/**
+ * Whether or not the index is a positional inverted index.
+ */
 int isPositional(SegmentPool* pool) {
   int reqspace = pool->pool[0][0];
   int csize = pool->pool[0][4];
@@ -127,6 +155,16 @@ int isPositional(SegmentPool* pool) {
   return 1;
 }
 
+/**
+ * Compress and write a segment into a non-positional segment pool,
+ * and link it to the previous segment (if present)
+ *
+ * @param pool Segment pool
+ * @param data Document ids
+ * @param len Number of document ids
+ * @param tailPointer Pointer to the previous segment
+ * @return Pointer to the new segment
+ */
 long compressAndAddNonPositional(SegmentPool* pool, unsigned int* data,
                                  unsigned int len, long tailPointer) {
   int lastSegment = -1;
@@ -201,6 +239,18 @@ long compressAndAddNonPositional(SegmentPool* pool, unsigned int* data,
   if(filter) free(filter);
   return newPointer;
 }
+
+/**
+ * Compress and write a segment into a non-positional segment pool with term frequencies,
+ * and link it to the previous segment (if present)
+ *
+ * @param pool Segment pool
+ * @param data Document ids
+ * @param tf Term frequencies
+ * @param len Number of document ids
+ * @param tailPointer Pointer to the previous segment
+ * @return Pointer to the new segment
+ */
 
 long compressAndAddTfOnly(SegmentPool* pool, unsigned int* data,
                           unsigned int* tf, unsigned int len, long tailPointer) {
@@ -289,6 +339,20 @@ long compressAndAddTfOnly(SegmentPool* pool, unsigned int* data,
 
   return newPointer;
 }
+
+/**
+ * Compress and write a segment into a positional segment pool,
+ * and link it to the previous segment (if present)
+ *
+ * @param pool Segment pool
+ * @param data Document ids
+ * @param tf Term frequencies
+ * @param positions List of gap-encoded term positions
+ * @param len Number of document ids
+ * @param plen Number of positions
+ * @param tailPointer Pointer to the previous segment
+ * @return Pointer to the new segment
+ */
 
 long compressAndAddPositional(SegmentPool* pool, unsigned int* data,
     unsigned int* tf, unsigned int* positions,
@@ -560,6 +624,14 @@ void decompressPositions(SegmentPool* pool, unsigned int* tf,
   }
 }
 
+/**
+ * If Bloom filter chains are present, perform a membership test
+ *
+ * @param pool Segment pool
+ * @param docid Test document id
+ * @param pointer Pointer to segment
+ * @return Whether or not input docid exists in the Bloom filter chain
+ */
 int containsDocid(SegmentPool* pool, unsigned int docid, long* pointer) {
   if(*pointer == UNDEFINED_POINTER) {
     return 0;
@@ -638,6 +710,10 @@ long readPostingsForTerm(SegmentPool* pool, long pointer, FILE* fp) {
   return ENCODE_POINTER(sSegment, sOffset);
 }
 
+/**
+ * Read number of hash functions and number of bits per element,
+ * if Bloom filter chains are present in the index.
+ */
 void readBloomStats(FILE* fp, int* bloomEnabled,
                     unsigned int* nbHash, unsigned int* bitsPerElement) {
   unsigned int temp;
