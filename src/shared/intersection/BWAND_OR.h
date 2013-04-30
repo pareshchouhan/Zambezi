@@ -5,11 +5,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "heap/Heap.h"
-#include "PostingsPool.h"
+#include "SegmentPool.h"
 
 #define TERMINAL_DOCID -1
 
-int* bwandOr(PostingsPool* pool, long* headPointers,
+int* bwandOr(SegmentPool* pool, long* headPointers,
            float* UB, int len, int hits) {
   Heap* elements = initHeap(hits);
   unsigned int* blockDocid = (unsigned int*) calloc(2 * BLOCK_SIZE, sizeof(unsigned int));

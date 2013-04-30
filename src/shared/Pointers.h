@@ -7,7 +7,7 @@
 #include <math.h>
 #include "buffer/FixedIntCounter.h"
 #include "buffer/FixedLongCounter.h"
-#include "PostingsPool.h"
+#include "SegmentPool.h"
 #include "Config.h"
 
 typedef struct Pointers Pointers;

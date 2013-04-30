@@ -6,12 +6,12 @@
 #include <string.h>
 #include "heap/Heap.h"
 #include "scorer/BM25.h"
-#include "PostingsPool.h"
+#include "SegmentPool.h"
 
 #define MIN(X, Y) (X < Y ? X : Y)
 #define TERMINAL_DOCID -1
 
-int* wand(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
+int* wand(SegmentPool* pool, long* headPointers, int* df, float* UB, int len,
           int* docLen, int totalDocs, float avgDocLen, int hits, int microblog) {
   Heap* elements = initHeap(hits);
   int origLen = len;

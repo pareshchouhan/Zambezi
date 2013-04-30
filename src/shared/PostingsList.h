@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include "InvertedIndex.h"
-#include "PostingsPool.h"
+#include "SegmentPool.h"
 #include "Pointers.h"
 #include "pfordelta/opt_p4.h"
 

@@ -8,7 +8,7 @@
 #include "buffer/FixedIntCounter.h"
 #include "buffer/FixedLongCounter.h"
 #include "util/ParseCommandLine.h"
-#include "PostingsPool.h"
+#include "SegmentPool.h"
 #include "DocumentVector.h"
 #include "Pointers.h"
 #include "Config.h"
@@ -46,7 +46,7 @@ int main (int argc, char** args) {
   unsigned int nbHash, bitsPerElement;
   readBloomStats(fp, &bloomEnabled, &nbHash, &bitsPerElement);
   int reverse = readReverseFlag(fp);
-  PostingsPool* contiguousPool = createPostingsPool(NUMBER_OF_POOLS, reverse, bloomEnabled,
+  SegmentPool* contiguousPool = createSegmentPool(NUMBER_OF_POOLS, reverse, bloomEnabled,
                                                     nbHash, bitsPerElement);
   Pointers* contiguousPointers = createPointers(DEFAULT_VOCAB_SIZE);
 
@@ -87,7 +87,7 @@ int main (int argc, char** args) {
   strcat(oindexPath, INDEX_FILE);
 
   fp = fopen(oindexPath, "wb");
-  writePostingsPool(contiguousPool, fp);
+  writeSegmentPool(contiguousPool, fp);
   fclose(fp);
 
   char opointerPath[1024];
@@ -119,7 +119,7 @@ int main (int argc, char** args) {
   }
 
   destroyDictionary(dic);
-  destroyPostingsPool(contiguousPool);
+  destroySegmentPool(contiguousPool);
   destroyPointers(pointers);
   destroyPointers(contiguousPointers);
 

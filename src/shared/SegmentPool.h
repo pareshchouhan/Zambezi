@@ -1,5 +1,5 @@
-#ifndef POSTINGS_POOL_H_GUARD
-#define POSTINGS_POOL_H_GUARD
+#ifndef SEGMENT_POOL_H_GUARD
+#define SEGMENT_POOL_H_GUARD
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -19,9 +19,9 @@
 #define DECODE_OFFSET(P) ((unsigned int) (P & 0xFFFFFFFF))
 #define ENCODE_POINTER(S, O) ((((unsigned long) S)<<32) | (unsigned int) O)
 
-typedef struct PostingsPool PostingsPool;
+typedef struct SegmentPool SegmentPool;
 
-struct PostingsPool {
+struct SegmentPool {
   unsigned int numberOfPools;
   unsigned int segment;
   unsigned int offset;
@@ -34,7 +34,7 @@ struct PostingsPool {
   unsigned int bitsPerElement;
 };
 
-void writePostingsPool(PostingsPool* pool, FILE* fp) {
+void writeSegmentPool(SegmentPool* pool, FILE* fp) {
   fwrite(&pool->segment, sizeof(unsigned int), 1, fp);
   fwrite(&pool->offset, sizeof(unsigned int), 1, fp);
   fwrite(&pool->reverse, sizeof(unsigned int), 1, fp);
@@ -49,8 +49,8 @@ void writePostingsPool(PostingsPool* pool, FILE* fp) {
   fwrite(pool->pool[pool->segment], sizeof(int), pool->offset, fp);
 }
 
-PostingsPool* readPostingsPool(FILE* fp) {
-  PostingsPool* pool = (PostingsPool*) malloc(sizeof(PostingsPool));
+SegmentPool* readSegmentPool(FILE* fp) {
+  SegmentPool* pool = (SegmentPool*) malloc(sizeof(SegmentPool));
   fread(&pool->segment, sizeof(unsigned int), 1, fp);
   fread(&pool->offset, sizeof(unsigned int), 1, fp);
   fread(&pool->reverse, sizeof(unsigned int), 1, fp);
@@ -78,9 +78,9 @@ int readReverseFlag(FILE* fp) {
   return r;
 }
 
-PostingsPool* createPostingsPool(int numberOfPools, int reverse, int bloomEnabled,
+SegmentPool* createSegmentPool(int numberOfPools, int reverse, int bloomEnabled,
                                  int nbHash, int bitsPerElement) {
-  PostingsPool* pool = (PostingsPool*) malloc(sizeof(PostingsPool));
+  SegmentPool* pool = (SegmentPool*) malloc(sizeof(SegmentPool));
   pool->pool = (int**) malloc(numberOfPools * sizeof(int*));
   int i;
   for(i = 0; i < numberOfPools; i++) {
@@ -96,7 +96,7 @@ PostingsPool* createPostingsPool(int numberOfPools, int reverse, int bloomEnable
   return pool;
 }
 
-void destroyPostingsPool(PostingsPool* pool) {
+void destroySegmentPool(SegmentPool* pool) {
   int i;
   for(i = 0; i < pool->numberOfPools; i++) {
     free(pool->pool[i]);
@@ -105,7 +105,7 @@ void destroyPostingsPool(PostingsPool* pool) {
   free(pool);
 }
 
-int isTermFrequencyPresent(PostingsPool* pool) {
+int isTermFrequencyPresent(SegmentPool* pool) {
   int reqspace = pool->pool[0][0];
   int csize = pool->pool[0][4];
   if(csize + 5 == reqspace) {
@@ -114,7 +114,7 @@ int isTermFrequencyPresent(PostingsPool* pool) {
   return 1;
 }
 
-int isPositional(PostingsPool* pool) {
+int isPositional(SegmentPool* pool) {
   int reqspace = pool->pool[0][0];
   int csize = pool->pool[0][4];
   if(csize + 5 == reqspace) {
@@ -127,7 +127,7 @@ int isPositional(PostingsPool* pool) {
   return 1;
 }
 
-long compressAndAddNonPositional(PostingsPool* pool, unsigned int* data,
+long compressAndAddNonPositional(SegmentPool* pool, unsigned int* data,
                                  unsigned int len, long tailPointer) {
   int lastSegment = -1;
   unsigned int lastOffset = 0;
@@ -202,7 +202,7 @@ long compressAndAddNonPositional(PostingsPool* pool, unsigned int* data,
   return newPointer;
 }
 
-long compressAndAddTfOnly(PostingsPool* pool, unsigned int* data,
+long compressAndAddTfOnly(SegmentPool* pool, unsigned int* data,
                           unsigned int* tf, unsigned int len, long tailPointer) {
   int lastSegment = -1;
   unsigned int lastOffset = 0;
@@ -290,7 +290,7 @@ long compressAndAddTfOnly(PostingsPool* pool, unsigned int* data,
   return newPointer;
 }
 
-long compressAndAddPositional(PostingsPool* pool, unsigned int* data,
+long compressAndAddPositional(SegmentPool* pool, unsigned int* data,
     unsigned int* tf, unsigned int* positions,
     unsigned int len, unsigned int plen, long tailPointer) {
   int lastSegment = -1;
@@ -430,7 +430,7 @@ long compressAndAddPositional(PostingsPool* pool, unsigned int* data,
  * the last block (i.e., there is no "next" block),
  * then this function returns UNDEFINED_POINTER.
  */
-long nextPointer(PostingsPool* pool, long pointer) {
+long nextPointer(SegmentPool* pool, long pointer) {
   if(pointer == UNDEFINED_POINTER) {
     return UNDEFINED_POINTER;
   }
@@ -451,7 +451,7 @@ long nextPointer(PostingsPool* pool, long pointer) {
  *
  * Note that outBlock must be at least 128 integers long.
  */
-int decompressDocidBlock(PostingsPool* pool, unsigned int* outBlock, long pointer) {
+int decompressDocidBlock(SegmentPool* pool, unsigned int* outBlock, long pointer) {
   int pSegment = DECODE_SEGMENT(pointer);
   unsigned int pOffset = DECODE_OFFSET(pointer);
 
@@ -462,7 +462,7 @@ int decompressDocidBlock(PostingsPool* pool, unsigned int* outBlock, long pointe
   return pool->pool[pSegment][pOffset + 5];
 }
 
-int decompressTfBlock(PostingsPool* pool, unsigned int* outBlock, long pointer) {
+int decompressTfBlock(SegmentPool* pool, unsigned int* outBlock, long pointer) {
   int pSegment = DECODE_SEGMENT(pointer);
   unsigned int pOffset = DECODE_OFFSET(pointer);
 
@@ -478,7 +478,7 @@ int decompressTfBlock(PostingsPool* pool, unsigned int* outBlock, long pointer) 
  * Retrieved the number of positions stored in the block
  * pointed to by "pointer".
  */
-int numberOfPositionBlocks(PostingsPool* pool, long pointer) {
+int numberOfPositionBlocks(SegmentPool* pool, long pointer) {
   int pSegment = DECODE_SEGMENT(pointer);
   unsigned int pOffset = DECODE_OFFSET(pointer);
 
@@ -495,7 +495,7 @@ int numberOfPositionBlocks(PostingsPool* pool, long pointer) {
  *
  * where BLOCK_SIZE is 128.
  */
-int decompressPositionBlock(PostingsPool* pool, unsigned int* outBlock, long pointer) {
+int decompressPositionBlock(SegmentPool* pool, unsigned int* outBlock, long pointer) {
   int pSegment = DECODE_SEGMENT(pointer);
   unsigned int pOffset = DECODE_OFFSET(pointer);
 
@@ -516,7 +516,7 @@ int decompressPositionBlock(PostingsPool* pool, unsigned int* outBlock, long poi
   return pool->pool[pSegment][pOffset + csize + tfsize + 8];
 }
 
-void decompressPositions(PostingsPool* pool, unsigned int* tf,
+void decompressPositions(SegmentPool* pool, unsigned int* tf,
                          int index, long pointer, int* out) {
   int pSegment = DECODE_SEGMENT(pointer);
   unsigned int pOffset = DECODE_OFFSET(pointer);
@@ -560,7 +560,7 @@ void decompressPositions(PostingsPool* pool, unsigned int* tf,
   }
 }
 
-int containsDocid(PostingsPool* pool, unsigned int docid, long* pointer) {
+int containsDocid(SegmentPool* pool, unsigned int docid, long* pointer) {
   if(*pointer == UNDEFINED_POINTER) {
     return 0;
   }
@@ -595,7 +595,7 @@ int containsDocid(PostingsPool* pool, unsigned int docid, long* pointer) {
  *
  * @param pointer Head Pointer.
  */
-long readPostingsForTerm(PostingsPool* pool, long pointer, FILE* fp) {
+long readPostingsForTerm(SegmentPool* pool, long pointer, FILE* fp) {
   int sSegment = -1, ppSegment = -1;
   unsigned int sOffset = 0, ppOffset = 0;
   int pSegment = DECODE_SEGMENT(pointer);

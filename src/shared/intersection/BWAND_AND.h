@@ -4,11 +4,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "PostingsPool.h"
+#include "SegmentPool.h"
 
 #define TERMINAL_DOCID -1
 
-int* bwandAnd(PostingsPool* pool, long* headPointers,
+int* bwandAnd(SegmentPool* pool, long* headPointers,
            int len, int hits) {
   int* set = (int*) calloc(hits, sizeof(int));
   unsigned int* blockDocid = (unsigned int*) calloc(2 * BLOCK_SIZE, sizeof(unsigned int));

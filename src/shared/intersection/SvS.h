@@ -4,13 +4,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "PostingsPool.h"
+#include "SegmentPool.h"
 
 #define MIN(X, Y) (X < Y ? X : Y)
 #define TERMINAL_DOCID -1
 
 // Gallop to >= docid
-inline int gallopSearch(PostingsPool* pool, int* data, int* count,
+inline int gallopSearch(SegmentPool* pool, int* data, int* count,
                         int* index, long* pointer, int docid) {
   while(1) {
     if(*index == *count) {
@@ -93,7 +93,7 @@ inline int gallopSearch(PostingsPool* pool, int* data, int* count,
   }
 }
 
-int* intersectPostingsLists_SvS(PostingsPool* pool, long a, long b, int minDf) {
+int* intersectPostingsLists_SvS(SegmentPool* pool, long a, long b, int minDf) {
   int* set = (int*) calloc(minDf, sizeof(int));
   unsigned int* dataA = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
   unsigned int* dataB = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
@@ -150,7 +150,7 @@ int* intersectPostingsLists_SvS(PostingsPool* pool, long a, long b, int minDf) {
   return set;
 }
 
-int intersectSetPostingsList_SvS(PostingsPool* pool, long a, int* currentSet, int len) {
+int intersectSetPostingsList_SvS(SegmentPool* pool, long a, int* currentSet, int len) {
   unsigned int* data = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
   int c = decompressDocidBlock(pool, data, a);
   int iSet = 0, iCurrent = 0, i = 0;
@@ -207,7 +207,7 @@ int intersectSetPostingsList_SvS(PostingsPool* pool, long a, int* currentSet, in
   return iSet;
 }
 
-int* intersectSvS(PostingsPool* pool, long* headPointers, int len, int minDf, int hits) {
+int* intersectSvS(SegmentPool* pool, long* headPointers, int len, int minDf, int hits) {
   if(len < 2) {
     unsigned int* block = (unsigned int*) calloc(BLOCK_SIZE * 2, sizeof(unsigned int));
     int length = MIN(minDf, hits);

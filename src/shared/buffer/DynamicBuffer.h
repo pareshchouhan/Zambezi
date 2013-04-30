@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "PostingsPool.h"
+#include "SegmentPool.h"
 #include "Config.h"
 
 typedef struct DynamicBuffer DynamicBuffer;

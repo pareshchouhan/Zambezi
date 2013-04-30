@@ -2,7 +2,7 @@
  * An inverted index data structure consisting of
  * the following components:
  *
- *  - PostingsPool, which contains all segments.
+ *  - SegmentPool, which contains all segments.
  *  - Dictionary, which is a mapping from term to term id
  *  - Pointers, which contains Document Frequency, Head/Tail Pointers,
  *    etc.
@@ -22,7 +22,7 @@
 #include "buffer/FixedIntCounter.h"
 #include "buffer/FixedLongCounter.h"
 #include "dictionary/Dictionary.h"
-#include "PostingsPool.h"
+#include "SegmentPool.h"
 #include "Pointers.h"
 #include "DocumentVector.h"
 #include "Config.h"
@@ -30,7 +30,7 @@
 typedef struct InvertedIndex InvertedIndex;
 
 struct InvertedIndex {
-  PostingsPool* pool;
+  SegmentPool* pool;
   Dictionary** dictionary;
   Pointers* pointers;
   DocumentVector* vectors;
@@ -40,7 +40,7 @@ InvertedIndex* createInvertedIndex(int reverse, int indexVectors,
                                    int bloomEnabled, unsigned int nbHash,
                                    unsigned int bitsPerElement) {
   InvertedIndex* index = (InvertedIndex*) malloc(sizeof(InvertedIndex));
-  index->pool = createPostingsPool(NUMBER_OF_POOLS, reverse, bloomEnabled,
+  index->pool = createSegmentPool(NUMBER_OF_POOLS, reverse, bloomEnabled,
                                    nbHash, bitsPerElement);
   index->dictionary = initDictionary();
   index->pointers = createPointers(DEFAULT_VOCAB_SIZE);
@@ -77,7 +77,7 @@ int getDf_InvertedIndex(InvertedIndex* index, int term) {
 }
 
 void destroyInvertedIndex(InvertedIndex* index) {
-  destroyPostingsPool(index->pool);
+  destroySegmentPool(index->pool);
   destroyDictionary(index->dictionary);
   destroyPointers(index->pointers);
   if(index->vectors) {
@@ -101,7 +101,7 @@ InvertedIndex* readInvertedIndex(char* rootPath) {
   strcat(indexPath, "/");
   strcat(indexPath, INDEX_FILE);
   fp = fopen(indexPath, "rb");
-  index->pool = readPostingsPool(fp);
+  index->pool = readSegmentPool(fp);
   fclose(fp);
 
   char pointerPath[1024];
@@ -141,7 +141,7 @@ void writeInvertedIndex(InvertedIndex* index, char* rootPath) {
   strcat(indexPath, "/");
   strcat(indexPath, INDEX_FILE);
   ofp = fopen(indexPath, "wb");
-  writePostingsPool(index->pool, ofp);
+  writeSegmentPool(index->pool, ofp);
   fclose(ofp);
 
   char pointerPath[1024];

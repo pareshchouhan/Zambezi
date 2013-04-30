@@ -6,12 +6,12 @@
 #include <string.h>
 #include "heap/HeapWithPositions.h"
 #include "scorer/BM25.h"
-#include "PostingsPool.h"
+#include "SegmentPool.h"
 
 #define MIN(X, Y) (X < Y ? X : Y)
 #define TERMINAL_DOCID -1
 
-Candidate** wandPositions(PostingsPool* pool, long* headPointers, int* df, float* UB, int len,
+Candidate** wandPositions(SegmentPool* pool, long* headPointers, int* df, float* UB, int len,
                           int* docLen, int totalDocs, float avgDocLen, int hits, int microblog) {
   HeapWithPositions* elements = initHeapWithPositions(hits, len);
   int origLen = len;

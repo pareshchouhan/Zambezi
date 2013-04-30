@@ -5,7 +5,7 @@
 #include <time.h>
 #include "util/ParseCommandLine.h"
 #include "dictionary/Dictionary.h"
-#include "PostingsPool.h"
+#include "SegmentPool.h"
 #include "Pointers.h"
 #include "Config.h"
 #include "InvertedIndex.h"

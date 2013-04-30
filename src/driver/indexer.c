@@ -13,7 +13,7 @@
 #include "buffer/IntSet.h"
 #include "util/ParseCommandLine.h"
 #include "scorer/BM25.h"
-#include "PostingsPool.h"
+#include "SegmentPool.h"
 #include "Pointers.h"
 #include "Config.h"
 #include "InvertedIndex.h"
