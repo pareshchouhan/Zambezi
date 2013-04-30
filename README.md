@@ -61,3 +61,5 @@ For formatting details, see http://nasadi.github.com/OptTrees.
 * `-hits` is the number of hits (default value is 1000). If `-hits` is not provided for SvS or BWAND_AND, the entire intersection set is computed.
 
 * If `-output` is included, the output is stored at `<output-path>`.
+
+In all cases, per-query latency is printed on stdout.
