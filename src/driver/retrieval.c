@@ -14,7 +14,6 @@
 #include "InvertedIndex.h"
 #include "intersection/SvS.h"
 #include "intersection/WAND.h"
-#include "heap/HeapWithPositions.h"
 #include "heap/Heap.h"
 #include "intersection/BWAND_AND.h"
 #include "intersection/BWAND_OR.h"
