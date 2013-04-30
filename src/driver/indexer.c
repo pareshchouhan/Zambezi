@@ -7,7 +7,7 @@
 #include "pfordelta/opt_p4.h"
 #include "dictionary/Dictionary.h"
 #include "buffer/FixedBuffer.h"
-#include "buffer/DynamicBuffer.h"
+#include "buffer/BufferMaps.h"
 #include "buffer/FixedIntCounter.h"
 #include "buffer/FixedLongCounter.h"
 #include "buffer/IntSet.h"
@@ -27,7 +27,7 @@ typedef struct IndexingData IndexingData;
 struct IndexingData {
   // Keeps tail pointers, docid, tf, and position
   // buffer pools, etc.
-  DynamicBuffer* buffer;
+  BufferMaps* buffer;
 
   // Keeps the index in the position buffer at which
   // the number of positions for the current block is stored
@@ -51,7 +51,7 @@ struct IndexingData {
 };
 
 void destroyIndexingData(IndexingData* data) {
-  destroyDynamicBuffer(data->buffer);
+  destroyBufferMaps(data->buffer);
   if(data->psum) {
     destroyFixedIntCounter(data->psum);
   }
@@ -126,14 +126,14 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
 
     // If we are to index tf in addition to docid
     if(data->positional == TFONLY) {
-      int* curtfBuffer = getTfDynamicBuffer(data->buffer, id);
+      int* curtfBuffer = getTfBufferMaps(data->buffer, id);
       if(!curtfBuffer) {
         curtfBuffer = (int*) calloc(DF_CUTOFF + 1, sizeof(int));
         data->buffer->tf[id] = curtfBuffer;
       }
       curtfBuffer[data->buffer->valuePosition[id]]++;
     } else if(data->positional == POSITIONAL) {
-      int* curtfBuffer = getTfDynamicBuffer(data->buffer, id);
+      int* curtfBuffer = getTfBufferMaps(data->buffer, id);
       int* curBuffer = data->buffer->position[id];
       // ps is the index in the position buffer that contains
       // the number of positions in the current block (because
@@ -226,7 +226,7 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
     // If df is less than df cut-off, then do not index, but
     // continue storing docids into initial, much smaller buffers
     if(df < DF_CUTOFF) {
-      int* curBuffer = getDocidDynamicBuffer(data->buffer, id);
+      int* curBuffer = getDocidBufferMaps(data->buffer, id);
       if(!curBuffer) {
         curBuffer = (int*) calloc(DF_CUTOFF, sizeof(int));
         data->buffer->docid[id] = curBuffer;
@@ -431,7 +431,7 @@ int main (int argc, char** args) {
   InvertedIndex* index = createInvertedIndex(reverse, documentVectors,
                                              bloomEnabled, nbHash, bitsPerElement);
   IndexingData* data = (IndexingData*) malloc(sizeof(IndexingData));
-  data->buffer = createDynamicBuffer(DEFAULT_VOCAB_SIZE, positional);
+  data->buffer = createBufferMaps(DEFAULT_VOCAB_SIZE, positional);
   if(positional == POSITIONAL) {
     data->psum = createFixedIntCounter(DEFAULT_VOCAB_SIZE, 0);
   } else {
@@ -528,7 +528,7 @@ int main (int argc, char** args) {
   // inverted index (if df > df_cut-off)
   unsigned int termsInBuffer = 0;
   int term = -1;
-  while((term = nextIndexDynamicBuffer(data->buffer, term, BLOCK_SIZE)) != -1) {
+  while((term = nextIndexBufferMaps(data->buffer, term, BLOCK_SIZE)) != -1) {
     termsInBuffer++;
     int pos = data->buffer->valuePosition[term];
 

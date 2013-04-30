@@ -10,6 +10,7 @@
 #define BLOOM_FILTER_ONE (unsigned int) 1
 #define DEFAULT_HASH_SEED (unsigned int) 0x7ed55d16
 
+// Jenkin's integer hash function
 unsigned int hash(unsigned int a, unsigned int seed) {
   a = (a+seed) + (a<<12);
   a = (a^0xc761c23c) ^ (a>>19);
@@ -19,6 +20,14 @@ unsigned int hash(unsigned int a, unsigned int seed) {
   return (a^0xb55a4f09) ^ (a>>16);
 }
 
+/**
+ * Given the number of documents and bits per element parameter,
+ * calculate the length of the Bloom filter
+ *
+ * @param df Document frequency
+ * @param bitsPerElement Number of bits per element
+ * @return length of Bloom vector in number of ints
+ */
 int computeBloomFilterLength(unsigned int df, int bitsPerElement) {
   df *= bitsPerElement;
   int r = df >> BLOOM_FILTER_UNIT_EXP;
@@ -30,6 +39,14 @@ int computeBloomFilterLength(unsigned int df, int bitsPerElement) {
   return length;
 }
 
+/**
+ * Insert a document id into the Bloom filter
+ *
+ * @param filter Bloom filter
+ * @param filterSize Size of the filter in number of ints
+ * @param nbHash number of hash functions
+ * @param value Document id
+ */
 void insertIntoBloomFilter(unsigned int* filter, unsigned int filterSize,
                            int nbHash, unsigned int value) {
   unsigned int seed = DEFAULT_HASH_SEED;
@@ -45,6 +62,9 @@ void insertIntoBloomFilter(unsigned int* filter, unsigned int filterSize,
   }
 }
 
+/**
+ * Perform a membership test on a Bloom filter
+ */
 int containsBloomFilter(unsigned int* filter, unsigned int filterSize,
                         int nbHash, unsigned int value) {
   unsigned int seed = DEFAULT_HASH_SEED;

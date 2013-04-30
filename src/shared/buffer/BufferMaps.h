@@ -6,9 +6,9 @@
 #include "SegmentPool.h"
 #include "Config.h"
 
-typedef struct DynamicBuffer DynamicBuffer;
+typedef struct BufferMaps BufferMaps;
 
-struct DynamicBuffer {
+struct BufferMaps {
   unsigned int** docid;
   unsigned int** tf;
   unsigned int** position;
@@ -20,10 +20,10 @@ struct DynamicBuffer {
   unsigned int capacity;
 };
 
-DynamicBuffer* createDynamicBuffer(unsigned int initialSize,
+BufferMaps* createBufferMaps(unsigned int initialSize,
                                    int positional) {
-  DynamicBuffer* buffer = (DynamicBuffer*)
-    malloc(sizeof(DynamicBuffer));
+  BufferMaps* buffer = (BufferMaps*)
+    malloc(sizeof(BufferMaps));
   buffer->capacity = initialSize;
   buffer->docid = (unsigned int**) calloc(initialSize, sizeof(unsigned int*));
   buffer->valueLength = (unsigned int*) calloc(initialSize, sizeof(unsigned int));
@@ -50,7 +50,7 @@ DynamicBuffer* createDynamicBuffer(unsigned int initialSize,
   return buffer;
 }
 
-void destroyDynamicBuffer(DynamicBuffer* buffer) {
+void destroyBufferMaps(BufferMaps* buffer) {
   int i;
   if(buffer->position) {
     for(i = 0; i < buffer->capacity; i++) {
@@ -87,7 +87,7 @@ void destroyDynamicBuffer(DynamicBuffer* buffer) {
   free(buffer);
 }
 
-void expandDynamicBuffer(DynamicBuffer* buffer) {
+void expandBufferMaps(BufferMaps* buffer) {
   unsigned int** tempDocid = (unsigned int**) realloc(buffer->docid,
       buffer->capacity * 2 * sizeof(unsigned int*));
   unsigned int* tempValueLength = (unsigned int*) realloc(buffer->valueLength,
@@ -144,35 +144,35 @@ void expandDynamicBuffer(DynamicBuffer* buffer) {
   buffer->capacity *= 2;
 }
 
-int containsKeyDynamicBuffer(DynamicBuffer* buffer, int k) {
+int containsKeyBufferMaps(BufferMaps* buffer, int k) {
   return buffer->docid[k] != NULL;
 }
 
-int* getDocidDynamicBuffer(DynamicBuffer* buffer, int k) {
+int* getDocidBufferMaps(BufferMaps* buffer, int k) {
   if(k >= buffer->capacity) {
-    expandDynamicBuffer(buffer);
+    expandBufferMaps(buffer);
   }
 
   return buffer->docid[k];
 }
 
-int* getTfDynamicBuffer(DynamicBuffer* buffer, int k) {
+int* getTfBufferMaps(BufferMaps* buffer, int k) {
   if(k >= buffer->capacity) {
-    expandDynamicBuffer(buffer);
+    expandBufferMaps(buffer);
   }
 
   return buffer->tf[k];
 }
 
-int* getPositionDynamicBuffer(DynamicBuffer* buffer, int k) {
+int* getPositionBufferMaps(BufferMaps* buffer, int k) {
   if(k >= buffer->capacity) {
-    expandDynamicBuffer(buffer);
+    expandBufferMaps(buffer);
   }
 
   return buffer->position[k];
 }
 
-int nextIndexDynamicBuffer(DynamicBuffer* buffer, int pos, int minLength) {
+int nextIndexBufferMaps(BufferMaps* buffer, int pos, int minLength) {
   pos++;
   if(pos >= buffer->capacity) {
     return -1;
