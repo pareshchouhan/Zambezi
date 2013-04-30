@@ -14,7 +14,6 @@
 #include "InvertedIndex.h"
 #include "intersection/SvS.h"
 #include "intersection/WAND.h"
-#include "intersection/WANDPositions.h"
 #include "heap/HeapWithPositions.h"
 #include "heap/Heap.h"
 #include "intersection/BWAND_AND.h"
@@ -36,8 +35,6 @@ enum Algorithm {
   MBWAND = 2,
   BWAND_OR = 3,
   BWAND_AND = 4,
-  WAND_FEATURES = 5,
-  MBWAND_FEATURES = 6,
 };
 #endif
 
@@ -62,17 +59,10 @@ int main (int argc, char** args) {
   char* intersectionAlgorithm = getValueCL(argc, args, "-algorithm");
   Algorithm algorithm = SVS;
 
-  // Algorithm is limited to the following list (case sensitive):
-  // - SvS (conjunctive)
-  // - WAND (disjunctive)
   if(!strcmp(intersectionAlgorithm, "SvS")) {
     algorithm = SVS;
   } else if(!strcmp(intersectionAlgorithm, "WAND")) {
     algorithm = WAND;
-  } else if(!strcmp(intersectionAlgorithm, "WANDFeatures")) {
-    algorithm = WAND_FEATURES;
-  } else if(!strcmp(intersectionAlgorithm, "MBWANDFeatures")) {
-    algorithm = MBWAND_FEATURES;
   } else if(!strcmp(intersectionAlgorithm, "MBWAND")) {
     algorithm = MBWAND;
   } else if(!strcmp(intersectionAlgorithm, "BWAND_OR")) {
@@ -81,7 +71,7 @@ int main (int argc, char** args) {
     algorithm = BWAND_AND;
   } else {
     printf("Invalid algorithm (Options: SvS | WAND | ");
-    printf("MBWAND | BWAND_OR | BWAND_AND | WANDFeatures | MBWANDFeatures)\n");
+    printf("MBWAND | BWAND_OR | BWAND_AND )\n");
     return;
   }
 
@@ -95,8 +85,7 @@ int main (int argc, char** args) {
   int numberOfFeatures = 0;
   int numberOfStaticFeatures = 0;
   int totalFeatures = 0;
-  if((index->vectors || algorithm == WAND_FEATURES || algorithm == MBWAND_FEATURES) &&
-     isPresentCL(argc, args, "-features")) {
+  if(index->vectors && isPresentCL(argc, args, "-features")) {
     char* featurePath = getValueCL(argc, args, "-features");
     FILE* fp = fopen(featurePath, "r");
     int f;
@@ -300,8 +289,7 @@ int main (int argc, char** args) {
     // Extract features
     float* features = NULL;
     int numberOfInstances = 0;
-    if(numberOfFeatures > 0 && algorithm != WAND_FEATURES &&
-       algorithm != MBWAND_FEATURES) {
+    if(numberOfFeatures > 0) {
       int f;
       features = malloc(hits * totalFeatures * sizeof(float));
       FixedBuffer** buffer = malloc(qlen * sizeof(FixedBuffer*));
@@ -333,49 +321,6 @@ int main (int argc, char** args) {
       }
       free(buffer);
       free(positions);
-    } else if(numberOfFeatures > 0 &&
-              (algorithm == WAND_FEATURES || algorithm == MBWAND_FEATURES)) {
-      float* UB = (float*) malloc(qlen * sizeof(float));
-      for(i = 0; i < qlen; i++) {
-        int tf = getMaxTf(index->pointers, queries[qindex][sortedDfIndex[i]]);
-        int dl = getMaxTfDocLen(index->pointers, queries[qindex][sortedDfIndex[i]]);
-        if(algorithm == WAND_FEATURES) {
-          UB[i] = _default_bm25(tf, qdf[i],
-                                index->pointers->totalDocs, dl,
-                                index->pointers->totalDocLen /
-                                ((float) index->pointers->totalDocs));
-        } else {
-          UB[i] = idf(index->pointers->totalDocs, qdf[i]);
-        }
-      }
-      Candidate** candidates = wandPositions(index->pool, qHeadPointers, qdf, UB, qlen,
-                                             index->pointers->docLen->counter,
-                                             index->pointers->totalDocs,
-                                             index->pointers->totalDocLen / (float) index->pointers->totalDocs,
-                                             hits, algorithm == MBWAND_FEATURES);
-      free(UB);
-
-      set = calloc(hits, sizeof(int));
-      features = malloc(hits * totalFeatures * sizeof(float));
-      for(i = 0; candidates[i] != NULL; i++) {
-        set[i] = candidates[i]->docid;
-        int f;
-        for(f = 0; f < numberOfFeatures; f++) {
-          features[i * totalFeatures + f] =
-            extractors[f](candidates[i]->positions, queries[qindex],
-                          qlen, set[i], index->pointers, &scorers[f]);
-        }
-        for(f = 0; f < numberOfStaticFeatures; f++) {
-          features[i * totalFeatures + numberOfFeatures + f] =
-            staticFeatures[f][set[i]];
-        }
-        numberOfInstances++;
-        destroyCandidate(candidates[i], qlen);
-      }
-      free(candidates);
-      if(i < hits) {
-        set[i] = TERMINAL_DOCID;
-      }
     }
 
     if(treeModel) {
