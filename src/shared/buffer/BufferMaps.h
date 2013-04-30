@@ -8,20 +8,38 @@
 
 typedef struct BufferMaps BufferMaps;
 
+// Buffer maps
 struct BufferMaps {
+  // Docid buffer map
   unsigned int** docid;
+  // Term frequency buffer map
   unsigned int** tf;
+  // Term positions buffer map
   unsigned int** position;
+  // Table of tail pointers for vocabulary terms
   unsigned long* tailPointer;
+  // Lengths of docid/tf buffers
   unsigned int* valueLength;
+  // Cursor in the docid/tf buffers
   unsigned int* valuePosition;
+  // Lengths of term positions buffers
   unsigned int* pvalueLength;
+  // Cursor in the term positions buffers
   unsigned int* pvaluePosition;
+
+  // Current capacity (number of vocabulary terms)
   unsigned int capacity;
 };
 
+/**
+ * Creates buffer maps.
+ *
+ * @param initialSize Initial capacity of buffer maps
+ * @param positional Type of index (non-positional, docids and tf,
+ *        or positional)
+ */
 BufferMaps* createBufferMaps(unsigned int initialSize,
-                                   int positional) {
+                             int positional) {
   BufferMaps* buffer = (BufferMaps*)
     malloc(sizeof(BufferMaps));
   buffer->capacity = initialSize;
@@ -87,6 +105,9 @@ void destroyBufferMaps(BufferMaps* buffer) {
   free(buffer);
 }
 
+/**
+ * Expand buffer maps' capacities by a factor of 2
+ */
 void expandBufferMaps(BufferMaps* buffer) {
   unsigned int** tempDocid = (unsigned int**) realloc(buffer->docid,
       buffer->capacity * 2 * sizeof(unsigned int*));
@@ -144,6 +165,12 @@ void expandBufferMaps(BufferMaps* buffer) {
   buffer->capacity *= 2;
 }
 
+/**
+ * Whether buffer maps contain a buffer for a given vocabulary term
+ *
+ * @param buffer Buffer maps
+ * @param k Term id
+ */
 int containsKeyBufferMaps(BufferMaps* buffer, int k) {
   return buffer->docid[k] != NULL;
 }
@@ -172,6 +199,15 @@ int* getPositionBufferMaps(BufferMaps* buffer, int k) {
   return buffer->position[k];
 }
 
+/**
+ * An iterator that goes through the vocabulary terms,
+ * and return the index of the next buffer whose length is more
+ * than a given threshold.
+ *
+ * @param buffer Buffer map
+ * @param pos Current index
+ * @param minLength Minimum length to consider
+ */
 int nextIndexBufferMaps(BufferMaps* buffer, int pos, int minLength) {
   pos++;
   if(pos >= buffer->capacity) {

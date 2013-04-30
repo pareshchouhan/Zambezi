@@ -11,6 +11,9 @@
 
 typedef struct IntSet IntSet;
 
+/**
+ * A Hash set of integers
+ */
 struct IntSet {
   unsigned char* used;
   unsigned int* key;
