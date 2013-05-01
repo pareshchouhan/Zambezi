@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Zambezi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="docs/assets/css/bootstrap.css" rel="stylesheet">
+    <link href="docs/assets/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="docs/assets/css/docs.css" rel="stylesheet">
+    <link href="docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+  </head>
+
+  <body data-spy="scroll" data-target=".bs-docs-sidebar">
+
+    <!-- Navbar
+    ================================================== -->
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li class="active">
+                <a href="./index.html">Home</a>
+              </li>
+              <li class="">
+                <a href="./index.html#GettingStarted">Getting Started</a>
+              </li>
+              <li class="">
+                <a href="./index.html#Publications">Publications</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+<div class="jumbotron masthead">
+  <div class="container">
+    <h1>Zambezi</h1>
+    <p>An Open-Source Multi-Stage Search Engine</p>
+    <ul class="masthead-links">
+      <li>
+        <a href="https://github.com/nasadi/Zambezi">GitHub project</a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+  <div class="container">
+
+<p class="lead" style="padding-top: 60px">
+Zambezi is an open-source search engine that performs in-memory indexing
+and retrieval using a multi-stage learning-to-rank architecture.
+</p>
+
+<p>Components include:</p>
+
+<ul>
+
+<li>Indexer: An incremental indexing algorithm that constructs
+block-compressed positional and non-positional inverted indexes<br />
+in the main memory, thereby enabling fast indexing and retrieval.
+The indexer is also capable of building Bloom filter chains<br />
+to be used with our BW<font size=1>AND</font> algorithm for faster top-<i>k</i> retrieval.
+</li>
+
+<li>Top-<i>k</i> Retrieval: As the first stage of retrieval,
+Zambezi retrieves top <i>k</i> documents that are most relevant to<br />
+an input query. Zambezi uses W<font size=1>AND</font> to retrieve
+documents ranked using BM25. For microblog documents, Zambezi utilizes<br />
+the BW<font size=1>AND</font> algorithm to retrieve documents
+using time and a simplified BM25 scoring function, which is an order<br />
+of magnitude faster than W<font size=1>AND</font>.
+</li>
+
+<li>Feature Extraction: Once the top-<i>k</i> documents are
+retrieved, Zambezi computes feature values for each candidate document<br />
+before passing the feature vectors to the final, re-ranking stage.
+Features can be query dependent (e.g., term and phrase queries),<br />
+or query independent, given as a table.
+</li>
+
+<li>Document Re-Ranking: In the final stage of retrieval,
+candidates are re-ranked using a machine-learned model.<br />
+Currently Zambezi supports Lambda-MART models and evaluates
+instances using the VP<font size=1>RED</font> implementation<br />
+of trees.
+
+</ul>
+
+<a id="GettingStarted"></a>
+<p class="lead" style="padding-top: 60px">Getting Started</p>
+
+<p>
+The input to the index is a set of (gzipped or raw) text files.
+Each line in an input file contains one document in the following format:
+</p>
+
+<code>
+  &lt;document_id: integer&gt; \t &lt;document: text&gt;.
+</code>
+
+<p>Please note that, you must perform necessary preprocessing (e.g.,
+parsing, stopping, stemming) prior to using the indexer, as the<br />
+indexer is only able to read parsed documents and does not perform
+any sort of stopping or stemming.</p>
+
+<p>
+To run the indexer:
+</p>
+
+<code>
+  out/driver/indexer -index &lt;output-index-root-path&gt; [-tf | -positional] [-reverse] [-vectors] \<br />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  [-bloom -r &lt;bits-per-element&gt; -k &lt;number-of-hash-functions&gt;] \<br />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  -mb &lt;maximum-buffer-length-in-number-of-blocks&gt; -input &lt;input-paths&gt;
+</code>
+
+<p>
+<ul>
+  <li><code>-index</code> is the root path to where the index should be stored</li>
+  <li><code>-tf | -positional</code> determines whether to augment the index structure with
+    term frequencies, or term frequencies and term positionsl.</li>
+  <li><code>-reverse</code> indicates that postings will be stored in
+    reverse order, such that the last posting inserted into the index will be read first.</li>
+  <li>With <code>-vectors</code>, the indexer accumulates document vectors which can be used
+    in feature extraction.</li>
+  <li>With <code>-bloom</code>, the indexer constructs Bloom filter chains to be used with the
+    BW<font size=1>AND</font> algorithm in top-<i>k</i> retrieval. <code>-r</code> and
+    <code>-k</code> are the number of bits per element and the number of hash functions,
+    respectively.</li>
+  <li><code>-mb</code> is the maximum buffer length (in blocks of 128 integers) in buffer maps.
+    Larger values translate into more contiguous inverted lists. Experimental evaluation
+    shows that setting <code>-mb</code> to 32 yields retrieval speed that is indistinguishable
+    from a fully contiguous index.</li>
+  <li><code>-input</code> is a list of (gzipped) input files. Note that, this argument
+    must appear last.</li>
+</ul>
+</p>
+
+<p>
+To perform retrieval:
+</p>
+
+<code>
+  out/driver/retrieval -index &lt;index-root-path&gt; -query &lt;query-path&gt; \<br />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  -algorithm &lt;SvS|WAND|MBWAND|BWAND_OR|BWAND_AND&gt; \<br />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  [-features &lt;feature-path&gt;]
+  [-model &lt;tree-ensemble-path&gt;] \<br />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  [-hits &lt;hits&gt;] [-output &lt;output-path&gt;]
+</code>
+
+<p>
+<ul>
+  <li><code>-index</code> is the root path to where the index is stored</li>
+  <li><code>-query</code> is the path to a query file</li>
+  <li><code>-algorithm</code> is the algorithm used in the top-<i>k</i> retrieval
+    stage</li>
+  <li>With <code>-features</code>, the driver will forward the candidate documents
+    to the feature extraction stage and compute feature values</li>
+  <li><code>-model</code>, is the path to a file that contains a Lambda-MART model.
+    If a model is provided and <code>-features</code> is included,
+    candidate documents are re-ranked using the given model.
+    For formatting details of the tree model file,
+    please see our open-source tree implementation package,
+    <a href="http://nasadi.github.com/OptTrees">OptTrees</a>.</li>
+  <li><code>-hits</code> is the number of candidate documents to retrieve (i.e., <i>k</i>).</li>
+  <li>If <code>-output</code> is included, the output is stored at &lt;output-path&gt;</li>
+</ul>
+
+In all cases, per-query latency is printed on stdout.
+</p>
+
+<p>
+Also note that, queries should be in the following format:
+</p>
+
+<p>
+<code>
+&lt;first_line&gt; .=. &lt;Number of queries:integer&gt;<br />
+&lt;line&gt; .=. &lt;query id: integer&gt; &lt;query length: integer&gt; &lt;query: text&gt;
+</code>
+</p>
+
+<a id="Publications"></a>
+<p class="lead" style="padding-top: 60px">Publications</p>
+
+<p>Nima Asadi and Jimmy Lin<br />
+  Fast Candidate Generation for Real-Time Tweet Search with Bloom Filter Chains. <br />
+  <i>ACM Transactions on Information Systems, 2013, in press.</i>
+</p>
+
+<p>Nima Asadi and Jimmy Lin<br />
+  Document Vector Representations for Feature Extraction in Multi-Stage Document Ranking. <br />
+  <i>Information Retrieval, 2012, in press.</i>
+
+<p>Nima Asadi, Jimmy Lin, and Arjen P. de Vries.<br />
+  Runtime Optimizations for Tree-Based Machine Learning Models. <br />
+  <i>IEEE Transactions on Knowledge and Data Engineering, 2013, in press</i>.
+</p>
+
+<p>Nima Asadi and Jimmy Lin<br />
+  Effectiveness-Efficiency Tradeoffs for Candidate Generation in Multi-Stage Retrieval Architectures. <br />
+  Proceedings of the 36th Annual International ACM SIGIR
+  Conference on Research and Development in Information Retrieval (SIGIR 2013), Dublin, Ireland.
+</p>
+
+
+  </div>
+
+    <!-- Footer
+    ================================================== -->
+    <footer class="footer">
+      <div class="container">
+        <p class="pull-right"><a href="#">Back to top</a></p>
+        <p>Designed using <a href="http://twitter.github.com/bootstrap/">Bootstrap</a>.</p>
+      </div>
+    </footer>
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="docs/assets/js/jquery.js"></script>
+    <script src="docs/assets/js/google-code-prettify/prettify.js"></script>
+    <script src="docs/assets/js/bootstrap-transition.js"></script>
+    <script src="docs/assets/js/bootstrap-alert.js"></script>
+    <script src="docs/assets/js/bootstrap-modal.js"></script>
+    <script src="docs/assets/js/bootstrap-dropdown.js"></script>
+    <script src="docs/assets/js/bootstrap-scrollspy.js"></script>
+    <script src="docs/assets/js/bootstrap-tab.js"></script>
+    <script src="docs/assets/js/bootstrap-tooltip.js"></script>
+    <script src="docs/assets/js/bootstrap-popover.js"></script>
+    <script src="docs/assets/js/bootstrap-button.js"></script>
+    <script src="docs/assets/js/bootstrap-collapse.js"></script>
+    <script src="docs/assets/js/bootstrap-carousel.js"></script>
+    <script src="docs/assets/js/bootstrap-typeahead.js"></script>
+    <script src="docs/assets/js/bootstrap-affix.js"></script>
+
+  </body>
+</html>
+
