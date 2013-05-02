@@ -168,11 +168,25 @@ In all cases, per-query latency is printed on stdout.
 Also note that, queries should be in the following format:
 </p>
 
-<p>
 <pre>
-&lt;first_line&gt; .=. &lt;Number of queries:integer&gt;<br />
+&lt;first_line&gt; .=. &lt;Number of queries:integer&gt;
 &lt;line&gt; .=. &lt;query id: integer&gt; &lt;query length: integer&gt; &lt;query: text&gt;
 </pre>
+
+<p>Feature file should be in the following format</p>
+
+<pre>
+&lt;Number of query-dependent features&gt;
+&lt;Feature descriptions&gt;
+&lt;Number of query-independent features&gt;
+&lt;Path to feature files&gt;
+</pre>
+
+<p>
+For a list of supported query-dependent features, please
+see <code>sample/features</code>. Query-independent scores
+should be stored in a binary file as a sequence of float values,
+starting with the score for the first document.
 </p>
 
 <a id="Publications"></a>
