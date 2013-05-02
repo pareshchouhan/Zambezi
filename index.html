@@ -1,107 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <title>Zambezi</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="">
-
-    <!-- Le styles -->
-    <link href="docs/assets/css/bootstrap.css" rel="stylesheet">
-    <link href="docs/assets/css/bootstrap-responsive.css" rel="stylesheet">
-    <link href="docs/assets/css/docs.css" rel="stylesheet">
-    <link href="docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet">
-
-    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <!--[if lt IE 9]>
-      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-
   </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Zambezi</h1>
+        <p class="view"><a href="http://github.com/nasadi/Zambezi">View the Project on GitHub
+            <small>nasadi/Zambezi</small></a></p>
+      </header>
+      <section>
 
-  <body data-spy="scroll" data-target=".bs-docs-sidebar">
-
-    <!-- Navbar
-    ================================================== -->
-    <div class="navbar navbar-inverse navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container">
-          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <div class="nav-collapse collapse">
-            <ul class="nav">
-              <li class="active">
-                <a href="./index.html">Home</a>
-              </li>
-              <li class="">
-                <a href="./index.html#Indexing">Indexing</a>
-              </li>
-              <li class="">
-                <a href="./index.html#Retrieval">Retrieval</a>
-              </li>
-              <li class="">
-                <a href="./index.html#Publications">Publications</a>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-
-<div class="jumbotron masthead">
-  <div class="container">
-    <h1>Zambezi</h1>
-    <p>An Open-Source Multi-Stage Search Engine</p>
-    <ul class="masthead-links">
-      <li>
-        <a href="https://github.com/nasadi/Zambezi">GitHub project</a>
-      </li>
-    </ul>
-  </div>
-</div>
-
-  <div class="container">
-
-<p class="lead" style="padding-top: 60px">
-Zambezi is an open-source search engine that performs in-memory indexing
+<h2>
+An open-source search engine that performs in-memory indexing
 and retrieval using a multi-stage learning-to-rank architecture.
-</p>
+</h2>
 
 <p>Components include:</p>
 
 <ul>
 
 <li>Indexer: An incremental indexing algorithm that constructs
-block-compressed positional and non-positional inverted indexes<br />
+block-compressed positional and non-positional inverted indexes
 in the main memory, thereby enabling fast indexing and retrieval.
-The indexer is also capable of building Bloom filter chains<br />
+The indexer is also capable of building Bloom filter chains
 to be used with our BW<font size=1>AND</font> algorithm for faster top-<i>k</i> retrieval.
 </li>
 
 <li>Top-<i>k</i> Retrieval: As the first stage of retrieval,
-Zambezi retrieves top <i>k</i> documents that are most relevant to<br />
+Zambezi retrieves top <i>k</i> documents that are most relevant to
 an input query. Zambezi uses W<font size=1>AND</font> to retrieve
-documents ranked using BM25. For microblog documents, Zambezi utilizes<br />
+documents ranked using BM25. For microblog documents, Zambezi utilizes
 the BW<font size=1>AND</font> algorithm to retrieve documents
-using time and a simplified BM25 scoring function, which is an order<br />
+using time and a simplified BM25 scoring function, which is an order
 of magnitude faster than W<font size=1>AND</font>.
 </li>
 
 <li>Feature Extraction: Once the top-<i>k</i> documents are
-retrieved, Zambezi computes feature values for each candidate document<br />
+retrieved, Zambezi computes feature values for each candidate document
 before passing the feature vectors to the final, re-ranking stage.
-Features can be query dependent (e.g., term and phrase queries),<br />
+Features can be query dependent (e.g., term and phrase queries),
 or query independent, given as a table.
 </li>
 
 <li>Document Re-Ranking: In the final stage of retrieval,
-candidates are re-ranked using a machine-learned model.<br />
+candidates are re-ranked using a machine-learned model.
 Currently Zambezi supports Lambda-MART models and evaluates
-instances using the VP<font size=1>RED</font> implementation<br />
+instances using the VP<font size=1>RED</font> implementation
 of trees.
 
 </ul>
@@ -114,15 +69,15 @@ The input to the index is a set of (gzipped or raw) text files.
 Each line in an input file contains one document in the following format:
 </p>
 
-<code>
+<pre>
   &lt;document_id: integer&gt; \t &lt;document: text&gt;.
-</code>
+</pre>
 
 <p>Please note that, you must perform necessary preprocessing (e.g.,
-parsing, stopping, stemming) prior to using the indexer, as the<br />
+parsing, stopping, stemming) prior to using the indexer, as the
 indexer is only able to read parsed documents and does not perform
 any sort of stopping or stemming. We have provided parsers for
-ClueWeb09, Gov2, and Tweets2011 collections under <code>util</code>.
+ClueWeb09, Gov2, and Tweets2011 collections under <code>util/</code>.
 Note that, building these classes requires
 <a href="http://lintool.github.com/Cloud9">Cloud<sup>9</sup></a>,
 <a href="http://lintool.github.com/Ivory">Ivory</a>,
@@ -134,15 +89,13 @@ and <a href="http://twittertools.cc/">twitter-tools</a>.
 To run the indexer:
 </p>
 
-<code>
-  out/driver/indexer -index &lt;output-index-root-path&gt; [-tf | -positional] [-reverse] [-vectors] \<br />
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  [-bloom -r &lt;bits-per-element&gt; -k &lt;number-of-hash-functions&gt;] \<br />
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  -mb &lt;maximum-buffer-length-in-number-of-blocks&gt; -input &lt;input-paths&gt;
-</code>
+<pre>
+out/driver/indexer -index &lt;output-index-root-path&gt; \
+                   [-tf | -positional] [-reverse] [-vectors] \
+                   [-bloom -r &lt;bits-per-element&gt; -k &lt;number-of-hash-functions&gt;] \
+                   -mb &lt;maximum-buffer-length-in-number-of-blocks&gt; \
+                   -input &lt;input-paths&gt;
+</pre>
 
 <p>
 <ul>
@@ -173,19 +126,15 @@ To run the indexer:
 To perform retrieval:
 </p>
 
-<code>
-  out/driver/retrieval -index &lt;index-root-path&gt; -query &lt;query-path&gt; \<br />
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  -algorithm &lt;SvS|WAND|MBWAND|BWAND_OR|BWAND_AND&gt; \<br />
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  [-features &lt;feature-path&gt;]
-  [-model &lt;tree-ensemble-path&gt;] \<br />
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  [-hits &lt;hits&gt;] [-output &lt;output-path&gt;]
-</code>
+<pre>
+out/driver/retrieval -index &lt;index-root-path&gt; \
+                     -query &lt;query-path&gt; \
+                     -algorithm &lt;SvS|WAND|MBWAND|BWAND_OR|BWAND_AND&gt; \
+                     [-features &lt;feature-path&gt;] \
+                     [-model &lt;tree-ensemble-path&gt;] \
+                     [-hits &lt;hits&gt;] \
+                     [-output &lt;output-path&gt;]
+</pre>
 
 <p>
 <ul>
@@ -220,65 +169,42 @@ Also note that, queries should be in the following format:
 </p>
 
 <p>
-<code>
+<pre>
 &lt;first_line&gt; .=. &lt;Number of queries:integer&gt;<br />
 &lt;line&gt; .=. &lt;query id: integer&gt; &lt;query length: integer&gt; &lt;query: text&gt;
-</code>
+</pre>
 </p>
 
 <a id="Publications"></a>
 <p class="lead" style="padding-top: 60px">Publications</p>
 
-<p>Nima Asadi and Jimmy Lin<br />
-  Fast Candidate Generation for Real-Time Tweet Search with Bloom Filter Chains. <br />
+<p>Nima Asadi and Jimmy Lin.
+  Fast Candidate Generation for Real-Time Tweet Search with Bloom Filter Chains.
   <i>ACM Transactions on Information Systems, 2013, in press.</i>
 </p>
 
-<p>Nima Asadi and Jimmy Lin<br />
-  Document Vector Representations for Feature Extraction in Multi-Stage Document Ranking. <br />
+<p>Nima Asadi and Jimmy Lin.
+  Document Vector Representations for Feature Extraction in Multi-Stage Document Ranking.
   <i>Information Retrieval, 2012, in press.</i>
 
-<p>Nima Asadi, Jimmy Lin, and Arjen P. de Vries.<br />
-  Runtime Optimizations for Tree-Based Machine Learning Models. <br />
+<p>Nima Asadi, Jimmy Lin, and Arjen P. de Vries.
+  Runtime Optimizations for Tree-Based Machine Learning Models.
   <i>IEEE Transactions on Knowledge and Data Engineering, 2013, in press</i>.
 </p>
 
-<p>Nima Asadi and Jimmy Lin<br />
-  Effectiveness-Efficiency Tradeoffs for Candidate Generation in Multi-Stage Retrieval Architectures. <br />
+<p>Nima Asadi and Jimmy Lin.
+  Effectiveness-Efficiency Tradeoffs for Candidate Generation in Multi-Stage Retrieval Architectures.
   Proceedings of the 36th Annual International ACM SIGIR
   Conference on Research and Development in Information Retrieval (SIGIR 2013), Dublin, Ireland.
 </p>
 
-
-  </div>
-
-    <!-- Footer
-    ================================================== -->
-    <footer class="footer">
-      <div class="container">
-        <p class="pull-right"><a href="#">Back to top</a></p>
-        <p>Designed using <a href="http://twitter.github.com/bootstrap/">Bootstrap</a>.</p>
-      </div>
+</section>
+    <footer>
+      <p><small>Hosted on GitHub Pages &mdash; Theme based on
+          <a href="https://github.com/orderedlist">orderedlist</a></small></p>
     </footer>
-
-    <!-- Le javascript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="docs/assets/js/jquery.js"></script>
-    <script src="docs/assets/js/google-code-prettify/prettify.js"></script>
-    <script src="docs/assets/js/bootstrap-transition.js"></script>
-    <script src="docs/assets/js/bootstrap-alert.js"></script>
-    <script src="docs/assets/js/bootstrap-modal.js"></script>
-    <script src="docs/assets/js/bootstrap-dropdown.js"></script>
-    <script src="docs/assets/js/bootstrap-scrollspy.js"></script>
-    <script src="docs/assets/js/bootstrap-tab.js"></script>
-    <script src="docs/assets/js/bootstrap-tooltip.js"></script>
-    <script src="docs/assets/js/bootstrap-popover.js"></script>
-    <script src="docs/assets/js/bootstrap-button.js"></script>
-    <script src="docs/assets/js/bootstrap-collapse.js"></script>
-    <script src="docs/assets/js/bootstrap-carousel.js"></script>
-    <script src="docs/assets/js/bootstrap-typeahead.js"></script>
-    <script src="docs/assets/js/bootstrap-affix.js"></script>
+    </div>
+    <script src="js/scale.fix.js"></script>
 
   </body>
 </html>
