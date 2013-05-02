@@ -145,8 +145,11 @@ int main (int argc, char** args) {
     if(numberOfStaticFeatures > 0) {
       staticFeatures = calloc(numberOfStaticFeatures, sizeof(float*));
       for(f = 0; f < numberOfStaticFeatures; f++) {
+        fscanf(fp, "%s", featureInputText);
+        FILE* fpsf = fopen(featureInputText, "rb");
         staticFeatures[f] = malloc(index->pointers->totalDocs * sizeof(float));
-        fread(staticFeatures[f], sizeof(float), index->pointers->totalDocs, fp);
+        fread(staticFeatures[f], sizeof(float), index->pointers->totalDocs, fpsf);
+        fclose(fpsf);
       }
     }
 
