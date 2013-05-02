@@ -38,7 +38,10 @@
                 <a href="./index.html">Home</a>
               </li>
               <li class="">
-                <a href="./index.html#GettingStarted">Getting Started</a>
+                <a href="./index.html#Indexing">Indexing</a>
+              </li>
+              <li class="">
+                <a href="./index.html#Retrieval">Retrieval</a>
               </li>
               <li class="">
                 <a href="./index.html#Publications">Publications</a>
@@ -103,8 +106,8 @@ of trees.
 
 </ul>
 
-<a id="GettingStarted"></a>
-<p class="lead" style="padding-top: 60px">Getting Started</p>
+<a id="Indexing"></a>
+<p class="lead" style="padding-top: 60px">Indexing</p>
 
 <p>
 The input to the index is a set of (gzipped or raw) text files.
@@ -156,6 +159,9 @@ To run the indexer:
 </ul>
 </p>
 
+<a id="Retrieval"></a>
+<p class="lead" style="padding-top: 60px">Retrieval</p>
+
 <p>
 To perform retrieval:
 </p>
@@ -179,7 +185,14 @@ To perform retrieval:
   <li><code>-index</code> is the root path to where the index is stored</li>
   <li><code>-query</code> is the path to a query file</li>
   <li><code>-algorithm</code> is the algorithm used in the top-<i>k</i> retrieval
-    stage</li>
+    stage. These algorithms are as follows:</li>
+  <ul>
+    <li>SvS: The Small vs. Small algorithm for conjunctive retrieval.</li>
+    <li>WAND: The W<font size=1>AND</font> algorithm, using Okapi-BM25 scoring function.</li>
+    <li>MBWAND: The W<font size=1>AND</font> algorithm, using IDF scoring function</li>
+    <li>BWAND_OR: The BW<font size=1>AND</font> algorithm in disjunctive mode</li>
+    <li>BWAND_AND: The BW<font size=1>AND</font> algorithm in conjunctive mode</li>
+  </ul>
   <li>With <code>-features</code>, the driver will forward the candidate documents
     to the feature extraction stage and compute feature values</li>
   <li><code>-model</code>, is the path to a file that contains a Lambda-MART model.
