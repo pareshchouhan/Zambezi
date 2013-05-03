@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <time.h>
 #include "pfordelta/opt_p4.h"
 #include "dictionary/Dictionary.h"
@@ -397,6 +399,10 @@ int grabline(char* t, char* buffer, int* consumed) {
 int main (int argc, char** args) {
   // Index root path
   char* outputPath = getValueCL(argc, args, "-index");
+  struct stat st = {0};
+  if(stat(outputPath, &st) == -1) {
+    mkdir(outputPath, 0700);
+  }
   // Maximum buffer length (in blocks)
   int maxBlocks = atoi(getValueCL(argc, args, "-mb")) * BLOCK_SIZE;
   // Non-positional, docid and tf, or positional index
