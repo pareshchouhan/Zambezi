@@ -1,0 +1,53 @@
+52
+1 11 articl exist deal tss time share system oper system ibm comput
+2 9 am interest articl written priev udo pooch priev pooch
+3 7 intermedi languag construct multi target compil tcoll
+4 27 im interest mechan communic disjoint process possibl exclus distribut environ see descript complet mechan implement oppos theoret work abstract problem remot procedur call messag pass exampl interest
+5 22 id like paper design implement edit interfac window manag command interpret essenti issu human interfac design view improv user effici effect satisfact
+6 12 interest articl robot motion plan geometr combinatori aspect interest dynam arm motion
+7 21 am interest distribut algorithm concurr program process communic synchron use messag pass area interest includ fault toler techniqu understand correct algorithm
+8 9 address scheme resourc network resourc address network oper system
+9 9 secur consider local network network oper system distribut system
+10 5 parallel languag languag parallel comput
+11 4 setl high level languag
+12 3 portabl oper system
+13 4 code optim space effici
+14 9 find discuss optim implement sort algorithm databas manag applic
+15 11 find discuss horizont microcod optim special emphasi optim loop global optim
+16 11 find descript file handl oper system base multipl process messag pass
+17 4 optim intermedi machin code
+18 11 languag compil parallel processor especi high horizont microcod machin code compact
+19 2 parallel algorithm
+20 6 graph theoret algorithm applic spars matric
+21 8 comput complex intract class complet reduct algorithm effici
+22 15 am interest hidden line hidden surfac algorithm cylind toroid sphere cone special topic comput graphic
+23 4 distribut comput structur algorithm
+24 3 appli stochast process
+25 5 perform evalu model comput system
+26 5 concurr control mechan oper system
+27 5 memori manag aspect oper system
+28 15 packet radio network interest algorithm packet rout deal chang network topographi am interest hardwar network
+29 12 number theoret algorithm especi involv prime number seri siev chines remaind theorem
+30 11 articl text format system includ see system exampl nroff scribe bravo
+31 35 id like find articl singular valu decomposit digit imag process applic includ find approxim origin imag restor imag subject nois articl subject andrew patterson outer product expans use digit imag process american mathemat andrew patterson
+32 26 id like find articl graph algorithm base eigenvalu decomposit singular valu decomposit ajac matrix graph im especi interest heurist algorithm graph color graph isomorph use method
+33 49 articl sensit eigenvalu decomposit real matric zero matric im especi interest separ eigenspac correspond distinct eigenvalu articl subject davi kahn rotat eigenvector permut siam numer analysi vol 7 1 1970 stewart error bound approxim invari subspac close linear oper siam numer analysi vol 8 4 1971 davi kahn stewart
+36 7 fast algorithm context free languag recognit pars
+37 27 articl relationship data type concurr type process synchron attempt process type correct messag pass system notion type messag way check sender messag receiv treat bit stream type
+38 22 type modul dont want entir literatur abstract data type here im sure phrase avoid im interest question can check modul match context
+39 22 type compat mean languag allow programm defin type want restrict extens languag allow definit abstract data type programm suppli definit oper like
+40 17 list articl deal data type follow languag referenc frequent paper languag catch languag interest type structur miss
+42 10 comput perform evalu techniqu use pattern recognit cluster la 70803
+43 16 analysi percept shape human comput shape descript shape recognit comput dimension shape measur circular shape match
+44 10 textur analysi comput digit textur analysi textur synthesi percept textur
+45 17 oper research model optim system perform includ fine tune decis secondari index select file reorgan distribut databas
+48 20 comput scienc principl data structur numer method generat optim linear program algorithm includ issu khachian russian ellipsoid algorithm complex algorithm
+49 7 role retriev knowledg base system expert system
+57 31 abstract articl backus can program liber von neumann style function style algebra program cacm 21 millo lipton per letter acm forum cacm 22 1979 629 630 backus de millo lipton per
+58 27 algorithm statist packag anova regress use least squar general linear model system design capabl statist formula interest student test wilcoxon sign test multivari univari compon can includ
+59 19 dictionari construct access method fast retriev word lexic item morpholog hash index method appli english spell natur languag problem
+60 31 hardwar softwar relat databas manag system databas packag back end comput special associ hardwar microcomput attach disk head like rap relat network codasyl hierarch model system like system im adaba total
+61 20 retriev articl gerard salton cluster bibliograph coupl citat citat vector space model boolean search method use invert file feedback salton
+62 8 result relat parallel complex theori pram uniform circuit
+63 8 algorithm parallel comput especi comparison parallel sequenti algorithm
+64 11 list articl el1 ecl el1 may given el 1 dont rememb
