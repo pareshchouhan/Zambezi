@@ -16,53 +16,61 @@
     <div class="wrapper">
       <header>
         <h1>Zambezi</h1>
+        <p>A multi-stage, in-memory search engine for streaming documents</p>
+
         <p class="view"><a href="http://github.com/nasadi/Zambezi">View the Project on GitHub
             <small>nasadi/Zambezi</small></a></p>
       </header>
       <section>
 
-<h2>
-An open-source search engine that performs in-memory indexing
-and retrieval using a multi-stage learning-to-rank architecture.
-</h2>
-
-<h3>Components include:</h3>
+<h2>Features</h2>
 
 <ul>
 
-<li>Indexer: An incremental indexing algorithm that constructs
+  <li><i>multi-stage ranking</i>: search is broken into candidate
+  generation, feature extraction, and document reranking (with
+  machine-learned models).</li>
+
+  <li><i>in-memory</i>: all index structures are kept in main
+  memory.</li>
+
+  <Li><i>streaming documents</i>: designed to incrementally index
+  documents as they arrive.</li>
+
+</ul>
+
+
+<h2>Key Components</h2>
+
+<p><b>In-memory, incremental indexer:</b> An incremental indexing algorithm that constructs
 block-compressed positional and non-positional inverted indexes
 in the main memory, thereby enabling fast indexing and retrieval.
 The indexer is also capable of building Bloom filter chains
-to be used with our BW<font size=1>AND</font> algorithm for faster top-<i>k</i> retrieval.
-</li>
+to be used with our BW<font size=1>AND</font> algorithm for faster top <i>k</i> retrieval.
 
-<li>Top-<i>k</i> Retrieval: As the first stage of retrieval,
+<p><b>Candidate generation:</b> As the first stage of retrieval,
 Zambezi retrieves top <i>k</i> documents that are most relevant to
 an input query. Zambezi uses W<font size=1>AND</font> to retrieve
 documents ranked using BM25. For microblog documents, Zambezi utilizes
 the BW<font size=1>AND</font> algorithm to retrieve documents
 using time and a simplified BM25 scoring function, which is an order
 of magnitude faster than W<font size=1>AND</font>.
-</li>
 
-<li>Feature Extraction: Once the top-<i>k</i> documents are
+<p><b>Feature Extraction:</b> Once the top <i>k</i> documents are
 retrieved, Zambezi computes feature values for each candidate document
-before passing the feature vectors to the final, re-ranking stage.
+before passing the feature vectors to the final, reranking stage.
 Features can be query dependent (e.g., term and phrase queries),
 or query independent, given as a table.
-</li>
 
-<li>Document Re-Ranking: In the final stage of retrieval,
-candidates are re-ranked using a machine-learned model.
+<p><b>Document Reranking:</b> In the final stage of retrieval,
+candidates are reranked using a machine-learned model.
 Currently Zambezi supports Lambda-MART models and evaluates
 instances using the VP<font size=1>RED</font> implementation
 of trees.
 
-</ul>
+<!--h2>Quick Demo</h2-->
 
-<a id="Indexing"></a>
-<h3>Indexing</h3>
+<h2>Indexing Guide</h2>
 
 <p>
 The input to the index is a set of (gzipped or raw) text files.
@@ -70,7 +78,7 @@ Each line in an input file contains one document in the following format:
 </p>
 
 <pre>
-  &lt;document_id: integer&gt; \t &lt;document: text&gt;.
+&lt;document_id: integer&gt; \t &lt;document: text&gt;
 </pre>
 
 <p>Please note that, you must perform necessary preprocessing (e.g.,
@@ -91,10 +99,10 @@ To run the indexer:
 
 <pre>
 out/driver/indexer -index &lt;output-index-root-path&gt; \
-                   [-tf | -positional] [-reverse] [-vectors] \
-                   [-bloom -r &lt;bits-per-element&gt; -k &lt;number-of-hash-functions&gt;] \
-                   -mb &lt;maximum-buffer-length-in-number-of-blocks&gt; \
-                   -input &lt;input-paths&gt;
+  [-tf | -positional] [-reverse] [-vectors] \
+  [-bloom -r &lt;bits-per-element&gt; -k &lt;number-of-hash-functions&gt;] \
+  -mb &lt;maximum-buffer-length-in-number-of-blocks&gt; \
+  -input &lt;input-paths&gt;
 </pre>
 
 <p>
@@ -107,7 +115,7 @@ out/driver/indexer -index &lt;output-index-root-path&gt; \
   <li>With <code>-vectors</code>, the indexer accumulates document vectors which can be used
     in feature extraction.</li>
   <li>With <code>-bloom</code>, the indexer constructs Bloom filter chains to be used with the
-    BW<font size=1>AND</font> algorithm in top-<i>k</i> retrieval. <code>-r</code> and
+    BW<font size=1>AND</font> algorithm in top <i>k</i> retrieval. <code>-r</code> and
     <code>-k</code> are the number of bits per element and the number of hash functions,
     respectively.</li>
   <li><code>-mb</code> is the maximum buffer length (in blocks of 128 integers) in buffer maps.
@@ -119,8 +127,7 @@ out/driver/indexer -index &lt;output-index-root-path&gt; \
 </ul>
 </p>
 
-<a id="Retrieval"></a>
-<h3>Retrieval</h3>
+<h2>Retrieval Guide</h2>
 
 <p>
 To perform retrieval:
@@ -128,32 +135,32 @@ To perform retrieval:
 
 <pre>
 out/driver/retrieval -index &lt;index-root-path&gt; \
-                     -query &lt;query-path&gt; \
-                     -algorithm &lt;SvS|WAND|MBWAND|BWAND_OR|BWAND_AND&gt; \
-                     [-features &lt;feature-path&gt;] \
-                     [-model &lt;tree-ensemble-path&gt;] \
-                     [-hits &lt;hits&gt;] \
-                     [-output &lt;output-path&gt;]
+  -query &lt;query-path&gt; \
+  -algorithm &lt;SvS|WAND|MBWAND|BWAND_OR|BWAND_AND&gt; \
+  [-features &lt;feature-path&gt;] \
+  [-model &lt;tree-ensemble-path&gt;] \
+  [-hits &lt;hits&gt;] \
+  [-output &lt;output-path&gt;]
 </pre>
 
 <p>
 <ul>
   <li><code>-index</code> is the root path to where the index is stored</li>
   <li><code>-query</code> is the path to a query file</li>
-  <li><code>-algorithm</code> is the algorithm used in the top-<i>k</i> retrieval
+  <li><code>-algorithm</code> is the algorithm used in the top <i>k</i> retrieval
     stage. These algorithms are as follows:</li>
   <ul>
-    <li>SvS: The Small vs. Small algorithm for conjunctive retrieval.</li>
-    <li>WAND: The W<font size=1>AND</font> algorithm, using Okapi-BM25 scoring function.</li>
-    <li>MBWAND: The W<font size=1>AND</font> algorithm, using IDF scoring function</li>
-    <li>BWAND_OR: The BW<font size=1>AND</font> algorithm in disjunctive mode</li>
-    <li>BWAND_AND: The BW<font size=1>AND</font> algorithm in conjunctive mode</li>
+    <li><code>SvS</code>: The Small vs. Small algorithm for conjunctive retrieval.</li>
+    <li><code>WAND</code>: The W<font size=1>AND</font> algorithm, using Okapi-BM25 scoring function.</li>
+    <li><code>MBWAND</code>: The W<font size=1>AND</font> algorithm, using IDF scoring function</li>
+    <li><code>BWAND_OR</code>: The BW<font size=1>AND</font> algorithm in disjunctive mode</li>
+    <li><code>BWAND_AND</code>: The BW<font size=1>AND</font> algorithm in conjunctive mode</li>
   </ul>
   <li>With <code>-features</code>, the driver will forward the candidate documents
     to the feature extraction stage and compute feature values</li>
   <li><code>-model</code>, is the path to a file that contains a Lambda-MART model.
     If a model is provided and <code>-features</code> is included,
-    candidate documents are re-ranked using the given model.
+    candidate documents are reranked using the given model.
     For formatting details of the tree model file,
     please see our open-source tree implementation package,
     <a href="http://nasadi.github.com/OptTrees">OptTrees</a>.</li>
@@ -189,33 +196,39 @@ should be stored in a binary file as a sequence of float values,
 starting with the score for the first document.
 </p>
 
-<a id="Publications"></a>
-<h3>Publications</h3>
+<h2>Publications</h2>
 
 <p>Nima Asadi and Jimmy Lin.
-  Fast Candidate Generation for Real-Time Tweet Search with Bloom Filter Chains.
+  <b>Document Vector Representations for Feature Extraction in Multi-Stage Document Ranking.</b>
+  <i>Information Retrieval, 2012, in press.</i>
+
+<p>Nima Asadi and Jimmy Lin.
+  <b>Fast Candidate Generation for Real-Time Tweet Search with Bloom Filter Chains.</b>
   <i>ACM Transactions on Information Systems, 2013, in press.</i>
 </p>
 
-<p>Nima Asadi and Jimmy Lin.
-  Document Vector Representations for Feature Extraction in Multi-Stage Document Ranking.
-  <i>Information Retrieval, 2012, in press.</i>
-
 <p>Nima Asadi, Jimmy Lin, and Arjen P. de Vries.
-  Runtime Optimizations for Tree-Based Machine Learning Models.
+  <b>Runtime Optimizations for Tree-Based Machine Learning Models.</b>
   <i>IEEE Transactions on Knowledge and Data Engineering, 2013, in press</i>.
 </p>
 
 <p>Nima Asadi and Jimmy Lin.
-  Effectiveness-Efficiency Tradeoffs for Candidate Generation in Multi-Stage Retrieval Architectures.
+  <b>Effectiveness-Efficiency Tradeoffs for Candidate Generation in Multi-Stage Retrieval Architectures.</b>
   Proceedings of the 36th Annual International ACM SIGIR
   Conference on Research and Development in Information Retrieval (SIGIR 2013), Dublin, Ireland.
 </p>
 
+
+<h2>Acknowledgments</h2>
+
+<p>This work has been supported by the US NSF under awards
+IIS-0916043, IIS-1144034, and IIS-1218043. Any opinions, findings, or
+conclusions are the authors' and do not necessarily reflect those of
+the sponsors.</p>
+
 </section>
     <footer>
-      <p><small>Hosted on GitHub Pages &mdash; Theme based on
-          <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      <p><small>Theme based on <a href="https://github.com/orderedlist">orderedlist</a></small></p>
     </footer>
     </div>
     <script src="js/scale.fix.js"></script>
