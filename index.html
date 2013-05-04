@@ -68,7 +68,34 @@ Currently Zambezi supports Lambda-MART models and evaluates
 instances using the VP<font size=1>RED</font> implementation
 of trees.
 
-<!--h2>Quick Demo</h2-->
+<h2>Quick Demo</h2>
+<p>
+  As a quick demo, we index the CACM collection (providedunder <code>sample/</code>)
+  and retrieve top 1000 documentsper query, using the W<font size=1>AND</font>
+  algorithm with BM25 scoring model. To do so, wefirst index thecollection as
+follows:</p>
+
+<pre>
+out/driver/indexer -index cacm_index/ -mb 1 -tf
+                   -input sample/cacm-collection.gz
+</pre>
+
+<p>Now, let's perform retrieval:</p>
+
+<pre>
+out/driver/retrieval -index cacm_index/ -query sample/cacm-queries.txt
+                     -algorithm WAND -hits 1000
+                     -docnoMapping sample/cacm-docno-mapping.txt
+                     -output wand.output
+</pre>
+
+<p>
+You can evaluate the ranked list (stored in <code>wand.output</code>) using
+the trec_eval script from TREC. Evaluation results should match
+<code>sample/cacm-wand.trec_eval.txt</code>.
+</p>
+
+
 
 <h2>Indexing Guide</h2>
 
