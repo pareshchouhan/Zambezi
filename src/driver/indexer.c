@@ -50,6 +50,9 @@ struct IndexingData {
 
   // Contains the raw document
   FixedBuffer* document;
+
+  // Df Cutoff
+  int dfCutoff;
 };
 
 void destroyIndexingData(IndexingData* data) {
@@ -130,7 +133,7 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
     if(data->positional == TFONLY) {
       int* curtfBuffer = getTfBufferMaps(data->buffer, id);
       if(!curtfBuffer) {
-        curtfBuffer = (int*) calloc(DF_CUTOFF + 1, sizeof(int));
+        curtfBuffer = (int*) calloc(data->dfCutoff + 1, sizeof(int));
         data->buffer->tf[id] = curtfBuffer;
       }
       curtfBuffer[data->buffer->valuePosition[id]]++;
@@ -144,12 +147,12 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
 
       // If this is a new term, create initial tf and position buffers
       if(!curBuffer) {
-        curBuffer = (int*) calloc(DF_CUTOFF, sizeof(int));
+        curBuffer = (int*) calloc(data->dfCutoff, sizeof(int));
         data->buffer->position[id] = curBuffer;
-        data->buffer->pvalueLength[id] = DF_CUTOFF;
+        data->buffer->pvalueLength[id] = data->dfCutoff;
         data->buffer->pvaluePosition[id] = 1;
 
-        curtfBuffer = (int*) calloc(DF_CUTOFF + 1, sizeof(int));
+        curtfBuffer = (int*) calloc(data->dfCutoff + 1, sizeof(int));
         data->buffer->tf[id] = curtfBuffer;
       }
 
@@ -227,12 +230,12 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
     int df = getDf(index->pointers, id);
     // If df is less than df cut-off, then do not index, but
     // continue storing docids into initial, much smaller buffers
-    if(df < DF_CUTOFF) {
+    if(df < data->dfCutoff) {
       int* curBuffer = getDocidBufferMaps(data->buffer, id);
       if(!curBuffer) {
-        curBuffer = (int*) calloc(DF_CUTOFF, sizeof(int));
+        curBuffer = (int*) calloc(data->dfCutoff, sizeof(int));
         data->buffer->docid[id] = curBuffer;
-        data->buffer->valueLength[id] = DF_CUTOFF;
+        data->buffer->valueLength[id] = data->dfCutoff;
       }
       data->buffer->docid[id][df] = docid;
       data->buffer->valuePosition[id]++;
@@ -245,16 +248,16 @@ int process(InvertedIndex* index, IndexingData* data, char* line, int termid) {
     int* curBuffer = data->buffer->docid[id];
     if(data->buffer->valueLength[id] < BLOCK_SIZE) {
       int* tempCurBuffer = (int*) realloc(curBuffer, BLOCK_SIZE * sizeof(int));
-      memset(tempCurBuffer+DF_CUTOFF, 0, (BLOCK_SIZE - DF_CUTOFF) * sizeof(int));
+      memset(tempCurBuffer+data->dfCutoff, 0, (BLOCK_SIZE - data->dfCutoff) * sizeof(int));
       data->buffer->docid[id] = tempCurBuffer;
       data->buffer->valueLength[id] = BLOCK_SIZE;
-      data->buffer->valuePosition[id] = DF_CUTOFF;
+      data->buffer->valuePosition[id] = data->dfCutoff;
       curBuffer = data->buffer->docid[id];
 
       if(data->positional == TFONLY || data->positional == POSITIONAL) {
         //expand tfbuffer
         int* tempTfBuffer = (int*) realloc(data->buffer->tf[id], BLOCK_SIZE * sizeof(int));
-        memset(tempTfBuffer+DF_CUTOFF+1, 0, (BLOCK_SIZE - DF_CUTOFF - 1) * sizeof(int));
+        memset(tempTfBuffer+data->dfCutoff+1, 0, (BLOCK_SIZE - data->dfCutoff - 1) * sizeof(int));
         data->buffer->tf[id] = tempTfBuffer;
       }
 
@@ -430,6 +433,11 @@ int main (int argc, char** args) {
     documentVectors = 1;
   }
 
+  int dfCutoff = DF_CUTOFF;
+  if(isPresentCL(argc, args, "-dfCutoff")) {
+    dfCutoff = atoi(getValueCL(argc, args, "-dfCutoff"));
+  }
+
   // List of input files (must be the last argument)
   int inputBeginIndex = isPresentCL(argc, args, "-input") + 1;
 
@@ -448,6 +456,7 @@ int main (int argc, char** args) {
   data->expansionEnabled = (maxBlocks > BLOCK_SIZE);
   data->maxBlocks = maxBlocks;
   data->positional = positional;
+  data->dfCutoff = dfCutoff;
 
   // Start term id from 0
   int termid = 0;
