@@ -76,17 +76,17 @@ of trees.
 follows:</p>
 
 <pre>
-out/driver/indexer -index cacm_index/ -mb 1 -tf
-                   -input sample/cacm-collection.gz
+out/driver/indexer -index cacm_index/ -mb 1 -tf \
+  -input sample/cacm-collection.gz
 </pre>
 
 <p>Now, let's perform retrieval:</p>
 
 <pre>
-out/driver/retrieval -index cacm_index/ -query sample/cacm-queries.txt
-                     -algorithm WAND -hits 1000
-                     -docnoMapping sample/cacm-docno-mapping.txt
-                     -output wand.output
+out/driver/retrieval -index cacm_index/ -query sample/cacm-queries.txt \
+  -algorithm WAND -hits 1000 \
+  -docnoMapping sample/cacm-docno-mapping.txt \
+  -output wand.output
 </pre>
 
 <p>
@@ -162,12 +162,12 @@ To perform retrieval:
 
 <pre>
 out/driver/retrieval -index &lt;index-root-path&gt; \
-                     -query &lt;query-path&gt; \
-                     -algorithm &lt;SvS|WAND|MBWAND|BWAND_OR|BWAND_AND&gt; \
-                     [-features &lt;feature-path&gt;] \
-                     [-model &lt;tree-ensemble-path&gt;] \
-                     [-hits &lt;hits&gt;] \
-                     [-output &lt;output-path&gt; -docnoMapping &lt;mapping-file&gt;]
+  -query &lt;query-path&gt; \
+  -algorithm &lt;SvS|WAND|MBWAND|BWAND_OR|BWAND_AND&gt; \
+  [-features &lt;feature-path&gt;] \
+  [-model &lt;tree-ensemble-path&gt;] \
+  [-hits &lt;hits&gt;] \
+  [-output &lt;output-path&gt; -docnoMapping &lt;mapping-file&gt;]
 </pre>
 
 <p>
@@ -248,25 +248,30 @@ qid docno/docid 1:value-of-feature-1 2:value-of-feature-2 ...
 
 <h2>Publications</h2>
 
-<p>Nima Asadi and Jimmy Lin.
-  <b>Document Vector Representations for Feature Extraction in Multi-Stage Document Ranking.</b>
-  <i>Information Retrieval, 2012, in press.</i>
+<ol>
 
-<p>Nima Asadi and Jimmy Lin.
-  <b>Fast Candidate Generation for Real-Time Tweet Search with Bloom Filter Chains.</b>
-  <i>ACM Transactions on Information Systems, 2013, in press.</i>
-</p>
+<li>Nima Asadi and Jimmy Lin.
+  <a href="papers/Asadi_Lin_IRJ2012.pdf"><b>Document Vector Representations for Feature Extraction in Multi-Stage Document Ranking.</b></a>
+  <i>Information Retrieval</i>, 2012, <i>in press</i>.
+</li>
 
-<p>Nima Asadi, Jimmy Lin, and Arjen P. de Vries.
-  <b>Runtime Optimizations for Tree-Based Machine Learning Models.</b>
-  <i>IEEE Transactions on Knowledge and Data Engineering, 2013, in press</i>.
-</p>
+<li>Nima Asadi and Jimmy Lin.
+  <a href="papers/Asadi_Lin_TOIS2013.pdf"><b>Fast Candidate Generation for Real-Time Tweet Search with Bloom Filter Chains.</b></a>
+  <i>ACM Transactions on Information Systems</i>, 2013, <i>in press</i>.
+</li>
 
-<p>Nima Asadi and Jimmy Lin.
+<li>Nima Asadi, Jimmy Lin, and Arjen P. de Vries.
+  <a href="papers/Asadi_etal_TKDE2013.pdf"><b>Runtime Optimizations for Tree-Based Machine Learning Models.</b></a>
+  <i>IEEE Transactions on Knowledge and Data Engineering</i>, 2013, <i>in press</i>.
+</li>
+
+<li>Nima Asadi and Jimmy Lin.
   <b>Effectiveness-Efficiency Tradeoffs for Candidate Generation in Multi-Stage Retrieval Architectures.</b>
-  Proceedings of the 36th Annual International ACM SIGIR
-  Conference on Research and Development in Information Retrieval (SIGIR 2013), Dublin, Ireland.
-</p>
+  <i>Proceedings of the 36th Annual International ACM SIGIR
+  Conference on Research and Development in Information Retrieval (SIGIR 2013)</i>, Dublin, Ireland.
+</li>
+
+</ol>
 
 
 <h2>Acknowledgments</h2>
