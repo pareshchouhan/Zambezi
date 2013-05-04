@@ -10,7 +10,7 @@
 #define TERMINAL_DOCID -1
 
 int* bwandOr(SegmentPool* pool, long* headPointers,
-           float* UB, int len, int hits) {
+             float* UB, int len, int hits, float** scores) {
   Heap* elements = initHeap(hits);
   unsigned int* blockDocid = (unsigned int*) calloc(2 * BLOCK_SIZE, sizeof(unsigned int));
   unsigned int count;
@@ -64,6 +64,7 @@ int* bwandOr(SegmentPool* pool, long* headPointers,
 
   int* set = (int*) calloc(elements->index + 1, sizeof(int));
   memcpy(set, &elements->docid[1], elements->index * sizeof(int));
+  memcpy(*scores, &elements->score[1], elements->index *sizeof(float));
   if(!isFullHeap(elements)) {
     set[elements->index] = TERMINAL_DOCID;
   }

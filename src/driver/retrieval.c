@@ -87,6 +87,20 @@ int main (int argc, char** args) {
   // Read the inverted index
   InvertedIndex* index = readInvertedIndex(inputPath);
 
+  // Docno-Docid Mapping
+  char** docnoMapping = NULL;
+  if(isPresentCL(argc, args, "-docnoMapping")) {
+    char* docnoMappingFile = getValueCL(argc, args, "-docnoMapping");
+    docnoMapping = malloc((index->pointers->totalDocs + 1) * sizeof(char*));
+    FILE* fp = fopen(docnoMappingFile, "r");
+    int documentId;
+    for(documentId = 1; documentId <= index->pointers->totalDocs; documentId++) {
+      docnoMapping[documentId] = malloc(50 * sizeof(char));
+      fscanf(fp, "%s", docnoMapping[documentId]);
+    }
+    fclose(fp);
+  }
+
   // Feature extraction: read and parse features
   computeFeature* extractors = NULL;
   ScoringFunction* scorers = NULL;
@@ -162,13 +176,14 @@ int main (int argc, char** args) {
   Heap* rankedList = initHeap(hits);
   if(isPresentCL(argc, args, "-model")) {
     treeModel = parseTrees(getValueCL(argc, args, "-model"));
-
-    int nb = hits;
-    if(nb % V != 0) {
-      nb = ((nb/V) + 1) * V;
-    }
-    scores = malloc(nb * sizeof(float));
   }
+
+  int nb = hits;
+  if(nb % V != 0) {
+    nb = ((nb/V) + 1) * V;
+  }
+  scores = malloc(nb * sizeof(float));
+
 
   // Read queries. Query file must be in the following format:
   // - First line: <number of queries: integer>
@@ -282,14 +297,14 @@ int main (int argc, char** args) {
                  index->pointers->docLen->counter,
                  index->pointers->totalDocs,
                  index->pointers->totalDocLen / (float) index->pointers->totalDocs,
-                 hits, algorithm == MBWAND);
+                 hits, algorithm == MBWAND, &scores);
       free(UB);
     } else if(algorithm == BWAND_OR) {
       float* UB = (float*) malloc(qlen * sizeof(float));
       for(i = 0; i < qlen; i++) {
         UB[i] = idf(index->pointers->totalDocs, qdf[i]);
       }
-      set = bwandOr(index->pool, qHeadPointers, UB, qlen, hits);
+      set = bwandOr(index->pool, qHeadPointers, UB, qlen, hits, &scores);
       free(UB);
     } else if(algorithm == BWAND_AND) {
       if(!hitsSpecified) {
@@ -359,8 +374,11 @@ int main (int argc, char** args) {
           }
         }
       }
+    }
 
-      // Rank documents using relevance scores
+    // Rank documents using relevance scores
+    if(treeModel || (!treeModel && !features &&
+                     (algorithm == BWAND_OR || algorithm == WAND))) {
       clearHeap(rankedList);
       for(i = 0; i < hits && set[i] > 0; i++) {
         insertHeap(rankedList, set[i], scores[i]);
@@ -376,7 +394,7 @@ int main (int argc, char** args) {
     // If output is specified, write the retrieved set to output
     if(outputPath) {
       for(i = 0; i < hits && set[i] > 0; i++) {
-        if(!features && !treeModel) {
+        if(!features && !treeModel && (algorithm != WAND && algorithm != BWAND_OR)) {
           fprintf(fp, "%d %d ", id, set[i]);
         } else if(features && !treeModel) {
           // Qid, Docid, list of feature values in SVM-Light format
@@ -385,9 +403,13 @@ int main (int argc, char** args) {
           for(f = 0; f < totalFeatures; f++) {
             fprintf(fp, "%d:%f ", (f + 1), features[i * totalFeatures + f]);
           }
-        } else if(treeModel) {
+        } else {
           // Print ranked list in TREC format
-          fprintf(fp, "%d Q0 %d %d %f zambezi", id, set[i], i + 1, scores[i]);
+          if(!docnoMapping) {
+            fprintf(fp, "%d Q0 %d %d %f zambezi", id, set[i], i + 1, scores[i]);
+          } else {
+            fprintf(fp, "%d Q0 %s %d %f zambezi", id, docnoMapping[set[i]], i + 1, scores[i]);
+          }
         }
         fprintf(fp, "\n");
       }
@@ -427,6 +449,13 @@ int main (int argc, char** args) {
     if(queries[i]) {
       free(queries[i]);
     }
+  }
+  if(docnoMapping) {
+    int documentId;
+    for(documentId = 1; documentId <= index->pointers->totalDocs; documentId++) {
+      free(docnoMapping[documentId]);
+    }
+    free(docnoMapping);
   }
   if(treeModel) destroyTreeModel(treeModel);
   if(scores) free(scores);

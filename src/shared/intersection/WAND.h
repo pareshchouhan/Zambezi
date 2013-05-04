@@ -12,7 +12,8 @@
 #define TERMINAL_DOCID -1
 
 int* wand(SegmentPool* pool, long* headPointers, int* df, float* UB, int len,
-          int* docLen, int totalDocs, float avgDocLen, int hits, int microblog) {
+          int* docLen, int totalDocs, float avgDocLen, int hits, int microblog,
+          float** scores) {
   Heap* elements = initHeap(hits);
   int origLen = len;
   unsigned int** blockDocid = (unsigned int**) calloc(len, sizeof(unsigned int*));
@@ -205,6 +206,7 @@ int* wand(SegmentPool* pool, long* headPointers, int* df, float* UB, int len,
 
   int* set = (int*) calloc(elements->index + 1, sizeof(int));
   memcpy(set, &elements->docid[1], elements->index * sizeof(int));
+  memcpy(*scores, &elements->score[1], elements->index * sizeof(float));
   if(!isFullHeap(elements)) {
     set[elements->index] = TERMINAL_DOCID;
   }
