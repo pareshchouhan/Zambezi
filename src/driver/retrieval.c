@@ -395,10 +395,18 @@ int main (int argc, char** args) {
     if(outputPath) {
       for(i = 0; i < hits && set[i] > 0; i++) {
         if(!features && !treeModel && (algorithm != WAND && algorithm != BWAND_OR)) {
-          fprintf(fp, "%d %d ", id, set[i]);
+          if(!docnoMapping) {
+            fprintf(fp, "%d %d ", id, set[i]);
+          } else {
+            fprintf(fp, "%d %s ", id, docnoMapping[set[i]]);
+          }
         } else if(features && !treeModel) {
           // Qid, Docid, list of feature values in SVM-Light format
-          fprintf(fp, "%d %d ", id, set[i]);
+          if(!docnoMapping) {
+            fprintf(fp, "%d %d ", id, set[i]);
+          } else {
+            fprintf(fp, "%d %s ", id, docnoMapping[set[i]]);
+          }
           int f;
           for(f = 0; f < totalFeatures; f++) {
             fprintf(fp, "%d:%f ", (f + 1), features[i * totalFeatures + f]);
