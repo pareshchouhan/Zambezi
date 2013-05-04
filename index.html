@@ -133,7 +133,7 @@ out/driver/retrieval -index &lt;index-root-path&gt; \
                      [-features &lt;feature-path&gt;] \
                      [-model &lt;tree-ensemble-path&gt;] \
                      [-hits &lt;hits&gt;] \
-                     [-output &lt;output-path&gt;]
+                     [-output &lt;output-path&gt; -docnoMapping &lt;mapping-file&gt;]
 </pre>
 
 <p>
@@ -159,11 +159,15 @@ out/driver/retrieval -index &lt;index-root-path&gt; \
     <a href="http://nasadi.github.com/OptTrees">OptTrees</a>.</li>
   <li><code>-hits</code> is the number of candidate documents to retrieve (i.e., <i>k</i>).</li>
   <li>If <code>-output</code> is included, the output is stored at &lt;output-path&gt;</li>
+  <li>If <code>-docnoMapping</code> is given, document numbers will be replaced with
+    document ids in the output file. The docno-mapping file is a text file that contains
+    document ids in order (i.e., docid for document 1, docid for document 2, and so on).</li>
 </ul>
 
 In all cases, per-query latency is printed on stdout.
 </p>
 
+<h4>Queries</h4>
 <p>
 Also note that, queries should be in the following format:
 </p>
@@ -173,6 +177,7 @@ Also note that, queries should be in the following format:
 &lt;line&gt; .=. &lt;query id: integer&gt; &lt;query length: integer&gt; &lt;query: text&gt;
 </pre>
 
+<h4>Features</h4>
 <p>Feature file should be in the following format</p>
 
 <pre>
@@ -188,6 +193,24 @@ see <code>sample/features</code>. Query-independent scores
 should be stored in a binary file as a sequence of float values,
 starting with the score for the first document.
 </p>
+
+<h4>Output</h4>
+<p>
+If the algorithm is set to W<font size=1>AND</font> and BW<font size=1>AND</font>_OR,
+or a Lambda-MART model is given to re-rank documents, the output is in the TREC evaluation
+format.
+</p>
+
+<p>
+On the other hand, if <code>-features</code> is included but a Lambda-MART model
+is not specified, then the output contains a feature vector per candidate document,
+where each line of the output is in the following format:
+</p>
+
+<pre>
+qid docno/docid 1:value-of-feature-1 2:value-of-feature-2 ...
+</pre>
+
 
 <a id="Publications"></a>
 <h3>Publications</h3>
