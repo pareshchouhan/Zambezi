@@ -70,13 +70,14 @@ of trees.
 
 <h2>Quick Demo</h2>
 <p>
-  As a quick demo, we index the CACM collection (providedunder <code>sample/</code>)
-  and retrieve top 1000 documentsper query, using the W<font size=1>AND</font>
-  algorithm with BM25 scoring model. To do so, wefirst index thecollection as
-follows:</p>
+  As a quick demo, we index the CACM collection (provided under <code>sample/</code>)
+  and retrieve top 1000 documents per query, using the W<font size=1>AND</font>
+  algorithm with BM25 scoring model. To do so, we first index thecollection as
+  follows:</p>
 
 <pre>
 out/driver/indexer -index cacm_index/ -mb 1 -tf
+                   -dfCutoff 1
                    -input sample/cacm-collection.gz
 </pre>
 
@@ -126,9 +127,10 @@ To run the indexer:
 
 <pre>
 out/driver/indexer -index &lt;output-index-root-path&gt; \
+  -mb &lt;maximum-buffer-length-in-number-of-blocks&gt; \
   [-tf | -positional] [-reverse] [-vectors] \
   [-bloom -r &lt;bits-per-element&gt; -k &lt;number-of-hash-functions&gt;] \
-  -mb &lt;maximum-buffer-length-in-number-of-blocks&gt; \
+  [-dfCutoff &lt;df-cutoff&gt]
   -input &lt;input-paths&gt;
 </pre>
 
@@ -149,6 +151,10 @@ out/driver/indexer -index &lt;output-index-root-path&gt; \
     Larger values translate into more contiguous inverted lists. Experimental evaluation
     shows that setting <code>-mb</code> to 32 yields retrieval speed that is indistinguishable
     from a fully contiguous index.</li>
+  <li><code>-dfCutoff</code> sets the document frequency-cutoff value. Terms with document frequency less than
+    or equal to this value will be discarded. The default value is set to 9 (i.e., terms that appear
+    less than 10 times will not be included in the final index).
+  </li>
   <li><code>-input</code> is a list of (gzipped) input files. Note that, this argument
     must appear last.</li>
 </ul>
