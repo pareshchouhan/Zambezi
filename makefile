@@ -6,7 +6,9 @@ TEST_OUT_DIR = $(OUT_DIR)/test
 DRIVER_OUT_DIR = $(OUT_DIR)/driver
 
 HEADERS = -Isrc/shared/
-CC = gcc -lz -lm -O3 -fomit-frame-pointer -pipe $(HEADERS)
+CC = gcc -pipe $(HEADERS)
+LFLAGS = -lz -lm
+CFLAGS = -O3 -fomit-frame-pointer
 
 TEST_SRC_FILES = $(wildcard $(TEST_DIR)/*.c)
 TEST_OUT_FILES = $(patsubst $(TEST_DIR)/%.c,$(TEST_OUT_DIR)/%,$(TEST_SRC_FILES))
@@ -14,10 +16,10 @@ DRIVER_SRC_FILES = $(wildcard $(DRIVER_DIR)/*.c)
 DRIVER_OUT_FILES = $(patsubst $(DRIVER_DIR)/%.c,$(DRIVER_OUT_DIR)/%,$(DRIVER_SRC_FILES))
 
 $(TEST_OUT_DIR)/%: $(TEST_DIR)/%.c
-	$(CC) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $< $(LFLAGS)
 
 $(DRIVER_OUT_DIR)/%: $(DRIVER_DIR)/%.c
-	$(CC) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $< $(LFLAGS)
 
 all: $(DRIVER_OUT_FILES)
 
